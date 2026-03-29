@@ -43,22 +43,30 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 #msginput:focus { border-color:#2d3a5a; }
 #sendbtn { background:linear-gradient(135deg,#1d4ed8,#7c3aed); border:none; border-radius:9px; padding:0 16px; color:white; cursor:pointer; font-size:20px; }
 #sendbtn:disabled { opacity:.35; cursor:not-allowed; }
-#sidebar { width:260px; background:#0c1018; border-left:1px solid #1a2035; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
+#sidebar { width:280px; background:#0c1018; border-left:1px solid #1a2035; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
 #sidebar::-webkit-scrollbar{width:3px;}
 .slabel { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#334155; margin-bottom:6px; font-weight:600; }
 #briefcard { background:#080d18; border:1px solid #1e3a5f; border-radius:10px; overflow:hidden; display:none; }
 #briefhead { background:linear-gradient(135deg,#1e3a5f,#0f2040); padding:11px 14px; }
 #brieftag { font-size:10px; color:#60a5fa; letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px; }
 #briefname { font-size:13px; font-weight:600; color:#e2e8f0; }
-#bookedbadge { background:#22c55e20; border:1px solid #22c55e40; color:#22c55e; font-size:10px; font-weight:700; padding:3px 8px; border-radius:14px; margin-top:5px; display:inline-block; }
+#bookedbadge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:14px; margin-top:5px; display:inline-block; }
+.badge-call { background:#22c55e20; border:1px solid #22c55e40; color:#22c55e; }
+.badge-text { background:#f59e0b20; border:1px solid #f59e0b40; color:#f59e0b; }
 #briefrows { padding:9px 14px; }
 .br { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #0f1a2e; font-size:12px; }
 .br:last-child{border-bottom:none;}
 .bl{color:#475569;} .bv{color:#cbd5e1;text-align:right;max-width:58%;}
-#targetbox { margin:8px 14px 14px; padding:10px 12px; background:#0f2040; border:1px solid #1e3a5f; border-radius:8px; }
-#targetlbl { font-size:10px; color:#60a5fa; letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px; }
-#targetarv { font-size:12px; color:#93c5fd; margin-bottom:2px; }
-#targetoffer { font-size:12px; color:#7dd3fc; }
+#calcbox { margin:0 14px 14px; padding:10px 12px; background:#0a0f1a; border:1px solid #1e3a5f; border-radius:8px; }
+.calc-title { font-size:10px; color:#60a5fa; letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+.calc-row { display:flex; justify-content:space-between; padding:4px 0; font-size:12px; }
+.calc-label { color:#475569; }
+.calc-val { color:#cbd5e1; font-weight:500; }
+.calc-val.hot { color:#22c55e; font-weight:700; }
+.calc-val.warm { color:#f59e0b; font-weight:700; }
+.calc-val.thin { color:#94a3b8; font-weight:700; }
+.calc-val.dead { color:#ef4444; font-weight:700; }
+.calc-divider { border:none; border-top:1px solid #1a2035; margin:6px 0; }
 #briefph { background:#0f1117; border:1px dashed #1a2035; border-radius:10px; padding:18px 12px; text-align:center; color:#334155; font-size:12px; line-height:1.7; }
 .qr { display:block; width:100%; text-align:left; background:#0c1018; border:1px solid #1a2035; border-radius:7px; padding:7px 10px; color:#64748b; font-size:11px; font-family:inherit; cursor:pointer; margin-bottom:5px; transition:all .15s; line-height:1.4; }
 .qr:hover{color:#a5b4fc;border-color:#2d3a5a;background:#111827;}
@@ -70,35 +78,35 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 <body>
 
 <div id="topbar">
-  <div id="logo">🏗</div>
-  <div><div id="appname">D&O Property Group</div><div id="appsub">Appointment booking assistant · Houston, TX</div></div>
+  <div id="logo">&#127959;</div>
+  <div><div id="appname">D&O Property Group</div><div id="appsub">AI Acquisition Agent · Houston, TX</div></div>
   <button id="newbtn" onclick="resetChat()">New lead</button>
 </div>
 
 <div id="gate">
-  <h3>🔑 Enter your Anthropic API key</h3>
-  <p>Your key is used only to power the AI responses — never stored anywhere.</p>
+  <h3>&#128273; Enter your Anthropic API key</h3>
+  <p>Your key powers Sofia — never stored anywhere outside this browser.</p>
   <div id="keyrow">
     <input id="keyinput" type="password" placeholder="sk-ant-api03-..." />
-    <button id="keybtn" onclick="connect()">Connect →</button>
+    <button id="keybtn" onclick="connect()">Connect</button>
   </div>
   <div id="errmsg"></div>
 </div>
 
 <div id="app">
   <div id="connected">
-    <span>✓ Connected — Sofia is live · EN / ES</span>
+    <span>&#10003; Sofia is live · EN / ES</span>
     <button id="changekey" onclick="disconnect()">Change key</button>
   </div>
   <div id="chatarea">
     <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #1a2035;">
       <div style="padding:6px 16px;background:#0a1020;border-bottom:1px solid #1a2035;font-size:11px;color:#60a5fa;">
-        🎯 Practice mode — type as the seller in English or Spanish. Sofia auto-detects.
+        &#127919; Practice mode — type as the seller in English or Spanish. Sofia auto-detects.
       </div>
       <div id="messages"></div>
       <div id="inputbar">
         <textarea id="msginput" rows="2" placeholder="Type as the seller… English or Spanish (Enter to send)"></textarea>
-        <button id="sendbtn" onclick="send()">→</button>
+        <button id="sendbtn" onclick="send()">&#8594;</button>
       </div>
     </div>
     <div id="sidebar">
@@ -106,48 +114,54 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
         <div id="briefhead">
           <div id="brieftag">Call brief ready</div>
           <div id="briefname">—</div>
-          <div id="bookedbadge">📞 CALL BOOKED</div>
+          <div id="bookedbadge" class="badge-call">&#128222; CALL BOOKED</div>
         </div>
         <div id="briefrows"></div>
-        <div id="targetbox">
-          <div id="targetlbl">Diego's target for the call</div>
-          <div id="targetarv"></div>
-          <div id="targetoffer"></div>
+        <div id="calcbox">
+          <div class="calc-title">Wholesaler analysis</div>
+          <div id="calcrows"></div>
         </div>
       </div>
-      <div id="briefph">📋 Once a call is booked your brief appears here with seller info and target offer range.</div>
+      <div id="briefph">&#128203; Once a call is booked your brief and full deal analysis appear here.</div>
       <div id="qrsection">
         <div class="slabel">Quick seller replies</div>
         <div id="qrbox"></div>
       </div>
       <div id="howbox">
         <div class="slabel">How this works</div>
-        <div class="hw"><span>🎯</span>Sofia qualifies in EN or ES</div>
-        <div class="hw"><span>📅</span>Books a call with Diego</div>
-        <div class="hw"><span>📋</span>Generates your call brief</div>
-        <div class="hw"><span>📞</span>You call knowing the numbers</div>
+        <div class="hw"><span>&#127919;</span>Sofia qualifies in EN or ES</div>
+        <div class="hw"><span>&#128197;</span>Call or text offer — seller picks</div>
+        <div class="hw"><span>&#128203;</span>Full deal analysis generated</div>
+        <div class="hw"><span>&#128222;</span>You call knowing every number</div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and book a 15-minute call with Diego.
+const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and get them to either book a call with Diego or receive a ballpark offer over text.
 
-LANGUAGE RULE: Detect the language of the seller's very first message and respond in that exact language for the entire conversation. If they write in Spanish, respond 100% in Spanish. If they write in English, respond 100% in English. Never mix languages. Never ask which language — just match them instantly and naturally.
+LANGUAGE RULE: Detect the language of the seller's very first message and respond in that exact language for the entire conversation. If they write in Spanish respond 100% in Spanish. If they write in English respond 100% in English. Never mix languages. Never ask which language — just match them instantly.
 
-Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting, not a robot. Never mention ARV, MAO, formulas, or make any offer — Diego does that on the call.
+Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, or formulas.
 
-Collect in this order: name, address, motivation for selling, timeline, property condition, asking price, mortgage balance remaining. Then book a 15-minute call with Diego — ask mornings or afternoons, confirm a specific time, and end with: "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego te llamara a las [HORA]. Sin presion, solo una charla rapida."
+STEP 1 - Collect in this order: name, property address, why selling (motivation), timeline, property condition (great/good/needs work/major repairs), asking price, mortgage balance.
+
+STEP 2 - After collecting everything ask: "This sounds like a great fit! Would you prefer a quick 15-minute phone call with Diego, or would you like me to put together a ballpark offer right here over text?" / "Esto suena muy bien! Prefiere una llamada rapida de 15 minutos con Diego, o le gustaria que le diera un rango de oferta aqui por mensaje?"
+
+STEP 3A - If phone call: Ask mornings or afternoons, confirm specific time, end with "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego le llamara a las [HORA]. Sin presion, solo una charla rapida."
+
+STEP 3B - If text offer: Say "Based on what you have shared, and factoring in the repairs and our costs since we buy completely as-is, Diego would likely be in the range of $[MAO_LOW] to $[MAO_HIGH]. This is just a ballpark — Diego can get you an exact number on a quick call. Does that range work for you?" Calculate MAO_LOW as asking price times 0.55, MAO_HIGH as asking price times 0.65. If they say yes to the range, book a call to finalize. If they say no, ask what number works for them and respond with empathy.
 
 If not interested: "No worries at all! Feel free to reach out anytime." / "Sin problema! No dudes en contactarnos cuando quieras."
 
-When call is confirmed add at the very end of your message:
-[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X]`;
+When call is confirmed OR text offer is accepted add at the very end:
+[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=call or text]`;
 
-const QUICK_EN = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works"];
+const REPAIR_COSTS = { great: 0, good: 10000, "needs work": 25000, "major repairs": 45000 };
 
-const QUICK_ES = ["Hola quiero vender mi casa","Herede una propiedad","Estoy atrasado en pagos","La casa necesita mucho trabajo","Pido alrededor de $140,000","Debo como $75,000","Necesito cerrar en 30 dias","Las mananas me vienen bien","Manana a las 10am esta bien"];
+const QUICK_EN = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works","I'd prefer an offer over text"];
+const QUICK_ES = ["Hola quiero vender mi casa","Herede una propiedad","Estoy atrasado en pagos","La casa necesita mucho trabajo","Pido alrededor de $140,000","Debo como $75,000","Necesito cerrar en 30 dias","Las mananas me vienen bien","Manana a las 10am esta bien","Prefiero una oferta por mensaje"];
 
 const MAKE_WEBHOOK = "https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et";
 
@@ -185,9 +199,44 @@ function init() {
 }
 
 function detectLang(text) {
-  const spanishWords = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera"];
-  const lower = text.toLowerCase();
-  return spanishWords.some(w => lower.includes(w)) ? "es" : "en";
+  const sw = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera","estoy","puedo"];
+  return sw.some(w => text.toLowerCase().includes(w)) ? "es" : "en";
+}
+
+function getRepairCost(condition) {
+  if (!condition) return 25000;
+  const c = condition.toLowerCase();
+  if (c.includes("great")) return 0;
+  if (c.includes("good")) return 10000;
+  if (c.includes("major")) return 45000;
+  if (c.includes("work") || c.includes("repair") || c.includes("reparacion") || c.includes("trabajo")) return 25000;
+  return 25000;
+}
+
+function calcDeal(asking, condition, owed) {
+  const a = parseFloat(asking) || 0;
+  const o = parseFloat(owed) || 0;
+  const repairs = getRepairCost(condition);
+  const arvLow = Math.round(a / 0.65 / 1000) * 1000;
+  const arvHigh = Math.round(a / 0.55 / 1000) * 1000;
+  const mao = Math.round(arvLow * 0.70) - repairs;
+  const offerLow = Math.round(mao * 0.68 / 1000) * 1000;
+  const offerHigh = Math.round(mao * 0.74 / 1000) * 1000;
+  const assignFee = Math.round((mao - a) * 0.6 / 1000) * 1000;
+  const equity = a - o;
+  const spread = mao - a;
+  let score, scoreClass;
+  if (spread > 20000) { score = "HOT"; scoreClass = "hot"; }
+  else if (spread > 5000) { score = "WARM"; scoreClass = "warm"; }
+  else if (spread >= 0) { score = "THIN"; scoreClass = "thin"; }
+  else { score = "DEAD"; scoreClass = "dead"; }
+  return { arvLow, arvHigh, mao, offerLow, offerHigh, assignFee, repairs, equity, spread, score, scoreClass };
+}
+
+function fmt(n) {
+  const v = parseFloat(n);
+  if (isNaN(v) || v === 0) return "$0";
+  return "$" + Math.round(v).toLocaleString();
 }
 
 function renderMsgs() {
@@ -226,12 +275,7 @@ async function send(pre) {
   const txt = (pre || inp.value).trim();
   if (!txt) return;
   inp.value = "";
-
-  if (history.length === 1) {
-    lang = detectLang(txt);
-    renderQR();
-  }
-
+  if (history.length === 1) { lang = detectLang(txt); renderQR(); }
   history.push({ role:"user", content:txt });
   history.push({ role:"assistant", content:"" });
   busy = true;
@@ -240,10 +284,7 @@ async function send(pre) {
   try {
     const res = await fetch("/api/chat", {
       method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "x-api-key": key
-      },
+      headers:{ "Content-Type":"application/json", "x-api-key": key },
       body: JSON.stringify({
         model:"claude-haiku-4-5-20251001",
         max_tokens:300,
@@ -253,9 +294,9 @@ async function send(pre) {
     });
     if (!res.ok) {
       const err = await res.json().catch(()=>({}));
-      if (res.status===401) throw new Error("Invalid API key — create a new one at console.anthropic.com");
-      if (res.status===403) throw new Error("Add $5 credits at console.anthropic.com/billing");
-      if (res.status===429) throw new Error("Too many requests — wait a moment and try again");
+      if (res.status===401) throw new Error("Invalid API key");
+      if (res.status===403) throw new Error("Add credits at console.anthropic.com/billing");
+      if (res.status===429) throw new Error("Too many requests — wait a moment");
       throw new Error(err?.error?.message || "API error "+res.status);
     }
     const data = await res.json();
@@ -264,24 +305,18 @@ async function send(pre) {
     renderMsgs();
     const m = full.match(/\[LEAD([^\]]+)\]/);
     if (m) {
-      showBrief(m[1]);
       const raw = m[1];
       const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
+      const lead = {
+        name: get("name"), address: get("address"), motivation: get("motivation"),
+        timeline: get("timeline"), condition: get("condition"), asking: get("asking"),
+        owed: get("owed"), calltime: get("calltime"), preference: get("preference")
+      };
+      showBrief(lead);
       fetch(MAKE_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: new Date().toLocaleDateString(),
-          name: get("name"),
-          address: get("address"),
-          motivation: get("motivation"),
-          timeline: get("timeline"),
-          condition: get("condition"),
-          asking: get("asking"),
-          owed: get("owed"),
-          calltime: get("calltime"),
-          language: lang,
-        })
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ date: new Date().toLocaleDateString(), ...lead, language: lang,
+          deal_score: calcDeal(lead.asking, lead.condition, lead.owed).score })
       });
     }
   } catch(e) {
@@ -294,21 +329,51 @@ async function send(pre) {
   document.getElementById("msginput").focus();
 }
 
-function showBrief(raw) {
-  const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
-  const lead = { name:get("name"), address:get("address"), motivation:get("motivation"), timeline:get("timeline"), condition:get("condition"), asking:get("asking"), owed:get("owed"), calltime:get("calltime") };
+function showBrief(lead) {
   document.getElementById("briefph").style.display = "none";
   document.getElementById("qrsection").style.display = "none";
   document.getElementById("briefcard").style.display = "block";
-  document.getElementById("briefname").textContent = (lead.name||"Seller")+" — "+(lead.calltime||"TBD");
-  const fmt = n => { const v=parseFloat(n); return isNaN(v)?(n||"—"):"$"+Math.round(v).toLocaleString(); };
-  document.getElementById("briefrows").innerHTML = [["Property",lead.address],["Motivation",lead.motivation],["Timeline",lead.timeline],["Condition",lead.condition],["Asking",fmt(lead.asking)],["Mortgage",fmt(lead.owed)],["Call time",lead.calltime]].filter(r=>r[1]).map(([l,v])=>`<div class="br"><span class="bl">${l}</span><span class="bv">${v}</span></div>`).join("");
-  const a = parseFloat(lead.asking);
-  if (!isNaN(a)) {
-    const lo=Math.round(a/0.65/1000)*1000, hi=Math.round(a/0.55/1000)*1000;
-    document.getElementById("targetarv").textContent = "Est. ARV: $"+lo.toLocaleString()+" - $"+hi.toLocaleString();
-    document.getElementById("targetoffer").textContent = "Target offer: $"+Math.round(lo*.68/1000).toLocaleString()+"k - $"+Math.round(lo*.74/1000).toLocaleString()+"k";
-  }
+
+  const isText = (lead.preference||"").toLowerCase().includes("text") || (lead.preference||"").toLowerCase().includes("texto");
+  const badge = document.getElementById("bookedbadge");
+  badge.textContent = isText ? "OFFER SENT OVER TEXT" : "CALL BOOKED";
+  badge.className = "bookedbadge " + (isText ? "badge-text" : "badge-call");
+
+  document.getElementById("briefname").textContent = (lead.name||"Seller") + " — " + (lead.calltime||"TBD");
+
+  const rows = [
+    ["Property", lead.address],
+    ["Motivation", lead.motivation],
+    ["Timeline", lead.timeline],
+    ["Condition", lead.condition],
+    ["Asking price", fmt(lead.asking)],
+    ["Mortgage owed", fmt(lead.owed)],
+    ["Preference", isText ? "Text offer" : "Phone call"],
+    ["Call time", lead.calltime],
+  ];
+  document.getElementById("briefrows").innerHTML = rows.filter(r=>r[1]).map(([l,v])=>
+    `<div class="br"><span class="bl">${l}</span><span class="bv">${v}</span></div>`
+  ).join("");
+
+  const calc = calcDeal(lead.asking, lead.condition, lead.owed);
+  const calcRows = [
+    ["Est. ARV", `${fmt(calc.arvLow)} – ${fmt(calc.arvHigh)}`],
+    ["Repair estimate", fmt(calc.repairs)],
+    ["MAO (70% rule)", fmt(calc.mao)],
+    ["divider", ""],
+    ["Your offer range", `${fmt(calc.offerLow)} – ${fmt(calc.offerHigh)}`],
+    ["Est. assignment fee", fmt(Math.max(0, calc.assignFee))],
+    ["Seller equity", fmt(calc.equity)],
+    ["Spread", fmt(calc.spread)],
+    ["divider", ""],
+    ["Deal score", calc.score],
+  ];
+
+  document.getElementById("calcrows").innerHTML = calcRows.map(([l,v]) => {
+    if (l === "divider") return `<hr class="calc-divider">`;
+    const cls = l === "Deal score" ? `calc-val ${calc.scoreClass}` : "calc-val";
+    return `<div class="calc-row"><span class="calc-label">${l}</span><span class="${cls}">${v}</span></div>`;
+  }).join("");
 }
 
 function resetChat() { if(key) init(); }
