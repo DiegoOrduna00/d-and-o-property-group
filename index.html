@@ -87,17 +87,17 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 
 <div id="app">
   <div id="connected">
-    <span>✓ Connected — Sofia is live</span>
+    <span>✓ Connected — Sofia is live · EN / ES</span>
     <button id="changekey" onclick="disconnect()">Change key</button>
   </div>
   <div id="chatarea">
     <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #1a2035;">
       <div style="padding:6px 16px;background:#0a1020;border-bottom:1px solid #1a2035;font-size:11px;color:#60a5fa;">
-        🎯 Practice mode — type as the seller. Sofia qualifies and books a call with Diego.
+        🎯 Practice mode — type as the seller in English or Spanish. Sofia auto-detects.
       </div>
       <div id="messages"></div>
       <div id="inputbar">
-        <textarea id="msginput" rows="2" placeholder="Type as the seller… (Enter to send)"></textarea>
+        <textarea id="msginput" rows="2" placeholder="Type as the seller… English or Spanish (Enter to send)"></textarea>
         <button id="sendbtn" onclick="send()">→</button>
       </div>
     </div>
@@ -122,7 +122,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
       </div>
       <div id="howbox">
         <div class="slabel">How this works</div>
-        <div class="hw"><span>🎯</span>Sofia qualifies the seller</div>
+        <div class="hw"><span>🎯</span>Sofia qualifies in EN or ES</div>
         <div class="hw"><span>📅</span>Books a call with Diego</div>
         <div class="hw"><span>📋</span>Generates your call brief</div>
         <div class="hw"><span>📞</span>You call knowing the numbers</div>
@@ -132,11 +132,26 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 </div>
 
 <script>
-const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and book a 15-minute call with Diego. Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, formulas, or make any offer. Collect in order: name, address, motivation, timeline, condition, asking price, mortgage balance. Then book the call. When confirmed add at end: [LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X]`;
+const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and book a 15-minute call with Diego.
 
-const QUICK = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works"];
+LANGUAGE RULE: Detect the language of the seller's very first message and respond in that exact language for the entire conversation. If they write in Spanish, respond 100% in Spanish. If they write in English, respond 100% in English. Never mix languages. Never ask which language — just match them instantly and naturally.
 
-let key = "", history = [], busy = false;
+Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting, not a robot. Never mention ARV, MAO, formulas, or make any offer — Diego does that on the call.
+
+Collect in this order: name, address, motivation for selling, timeline, property condition, asking price, mortgage balance remaining. Then book a 15-minute call with Diego — ask mornings or afternoons, confirm a specific time, and end with: "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego te llamara a las [HORA]. Sin presion, solo una charla rapida."
+
+If not interested: "No worries at all! Feel free to reach out anytime." / "Sin problema! No dudes en contactarnos cuando quieras."
+
+When call is confirmed add at the very end of your message:
+[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X]`;
+
+const QUICK_EN = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works"];
+
+const QUICK_ES = ["Hola quiero vender mi casa","Herede una propiedad","Estoy atrasado en pagos","La casa necesita mucho trabajo","Pido alrededor de $140,000","Debo como $75,000","Necesito cerrar en 30 dias","Las mananas me vienen bien","Manana a las 10am esta bien"];
+
+const MAKE_WEBHOOK = "https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et";
+
+let key = "", history = [], busy = false, lang = "en";
 
 function connect() {
   const v = document.getElementById("keyinput").value.trim();
@@ -160,12 +175,19 @@ function disconnect() {
 }
 
 function init() {
-  history = [{ role:"assistant", content:"Hey! Thanks for reaching out to D&O Property Group. I'm Sofia, Diego's assistant — who am I speaking with today?" }];
+  lang = "en";
+  history = [{ role:"assistant", content:"Hey! Thanks for reaching out to D&O Property Group. I'm Sofia — who am I speaking with? / Hola! Gracias por contactar a D&O Property Group. Soy Sofia — con quien hablo?" }];
   document.getElementById("briefcard").style.display = "none";
   document.getElementById("briefph").style.display = "block";
   document.getElementById("qrsection").style.display = "block";
   renderMsgs();
   renderQR();
+}
+
+function detectLang(text) {
+  const spanishWords = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera"];
+  const lower = text.toLowerCase();
+  return spanishWords.some(w => lower.includes(w)) ? "es" : "en";
 }
 
 function renderMsgs() {
@@ -177,9 +199,9 @@ function renderMsgs() {
     const clean = (m.content||"").replace(/\[LEAD[^\]]*\]/g,"").trim();
     const isWaiting = m.role==="assistant" && !clean && busy;
     if (m.role==="assistant") {
-      row.innerHTML = `<div class="av a">🏗</div><div class="bub ${m.err?'e':'a'}">${isWaiting?'<div class="dots"><span></span><span></span><span></span></div>':(clean||"...")}</div>`;
+      row.innerHTML = `<div class="av a">&#127959;</div><div class="bub ${m.err?'e':'a'}">${isWaiting?'<div class="dots"><span></span><span></span><span></span></div>':(clean||"...")}</div>`;
     } else {
-      row.innerHTML = `<div class="bub u">${clean}</div><div class="av u">👤</div>`;
+      row.innerHTML = `<div class="bub u">${clean}</div><div class="av u">&#128100;</div>`;
     }
     box.appendChild(row);
   });
@@ -189,7 +211,8 @@ function renderMsgs() {
 function renderQR() {
   const box = document.getElementById("qrbox");
   box.innerHTML = "";
-  QUICK.forEach(q => {
+  const replies = lang === "es" ? QUICK_ES : QUICK_EN;
+  replies.forEach(q => {
     const b = document.createElement("button");
     b.className = "qr"; b.textContent = q;
     b.onclick = () => send(q);
@@ -203,6 +226,12 @@ async function send(pre) {
   const txt = (pre || inp.value).trim();
   if (!txt) return;
   inp.value = "";
+
+  if (history.length === 1) {
+    lang = detectLang(txt);
+    renderQR();
+  }
+
   history.push({ role:"user", content:txt });
   history.push({ role:"assistant", content:"" });
   busy = true;
@@ -234,9 +263,29 @@ async function send(pre) {
     history[history.length-1].content = full;
     renderMsgs();
     const m = full.match(/\[LEAD([^\]]+)\]/);
-    if (m) showBrief(m[1]);
+    if (m) {
+      showBrief(m[1]);
+      const raw = m[1];
+      const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
+      fetch(MAKE_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: new Date().toLocaleDateString(),
+          name: get("name"),
+          address: get("address"),
+          motivation: get("motivation"),
+          timeline: get("timeline"),
+          condition: get("condition"),
+          asking: get("asking"),
+          owed: get("owed"),
+          calltime: get("calltime"),
+          language: lang,
+        })
+      });
+    }
   } catch(e) {
-    history[history.length-1].content = "⚠️ "+e.message;
+    history[history.length-1].content = "Error: "+e.message;
     history[history.length-1].err = true;
     renderMsgs();
   }
@@ -257,8 +306,8 @@ function showBrief(raw) {
   const a = parseFloat(lead.asking);
   if (!isNaN(a)) {
     const lo=Math.round(a/0.65/1000)*1000, hi=Math.round(a/0.55/1000)*1000;
-    document.getElementById("targetarv").textContent = `Est. ARV: $${lo.toLocaleString()} – $${hi.toLocaleString()}`;
-    document.getElementById("targetoffer").textContent = `Target offer: $${Math.round(lo*.68/1000).toLocaleString()}k – $${Math.round(lo*.74/1000).toLocaleString()}k`;
+    document.getElementById("targetarv").textContent = "Est. ARV: $"+lo.toLocaleString()+" - $"+hi.toLocaleString();
+    document.getElementById("targetoffer").textContent = "Target offer: $"+Math.round(lo*.68/1000).toLocaleString()+"k - $"+Math.round(lo*.74/1000).toLocaleString()+"k";
   }
 }
 
