@@ -1,7 +1,7 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-<title>DV Acquisitions Agent</title>
+<title>D&O Property Group</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; }
@@ -68,13 +68,13 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 </style>
 </head>
 <body>
- 
+
 <div id="topbar">
   <div id="logo">🏗</div>
-  <div><div id="appname">DV Acquisitions</div><div id="appsub">Appointment booking assistant · Houston, TX</div></div>
+  <div><div id="appname">D&O Property Group</div><div id="appsub">Appointment booking assistant · Houston, TX</div></div>
   <button id="newbtn" onclick="resetChat()">New lead</button>
 </div>
- 
+
 <div id="gate">
   <h3>🔑 Enter your Anthropic API key</h3>
   <p>Your key is used only to power the AI responses — never stored anywhere.</p>
@@ -84,16 +84,16 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
   </div>
   <div id="errmsg"></div>
 </div>
- 
+
 <div id="app">
   <div id="connected">
-    <span>✓ Connected — agent is live</span>
+    <span>✓ Connected — Sofia is live</span>
     <button id="changekey" onclick="disconnect()">Change key</button>
   </div>
   <div id="chatarea">
     <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #1a2035;">
       <div style="padding:6px 16px;background:#0a1020;border-bottom:1px solid #1a2035;font-size:11px;color:#60a5fa;">
-        🎯 Practice mode — type as the seller. Agent qualifies and books a call with Diego.
+        🎯 Practice mode — type as the seller. Sofia qualifies and books a call with Diego.
       </div>
       <div id="messages"></div>
       <div id="inputbar">
@@ -122,7 +122,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
       </div>
       <div id="howbox">
         <div class="slabel">How this works</div>
-        <div class="hw"><span>🎯</span>Agent qualifies the seller</div>
+        <div class="hw"><span>🎯</span>Sofia qualifies the seller</div>
         <div class="hw"><span>📅</span>Books a call with Diego</div>
         <div class="hw"><span>📋</span>Generates your call brief</div>
         <div class="hw"><span>📞</span>You call knowing the numbers</div>
@@ -130,14 +130,14 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
     </div>
   </div>
 </div>
- 
+
 <script>
-const SYSTEM = `You are a friendly acquisition assistant for DV Acquisitions, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and book a 15-minute call with Diego. Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, formulas, or make any offer. Collect in order: name, address, motivation, timeline, condition, asking price, mortgage balance. Then book the call. When confirmed add at end: [LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X]`;
- 
+const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and book a 15-minute call with Diego. Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, formulas, or make any offer. Collect in order: name, address, motivation, timeline, condition, asking price, mortgage balance. Then book the call. When confirmed add at end: [LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X]`;
+
 const QUICK = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works"];
- 
+
 let key = "", history = [], busy = false;
- 
+
 function connect() {
   const v = document.getElementById("keyinput").value.trim();
   if (!v.startsWith("sk-ant-")) {
@@ -151,23 +151,23 @@ function connect() {
   document.getElementById("app").style.flexDirection = "column";
   init();
 }
- 
+
 function disconnect() {
   key = "";
   document.getElementById("gate").style.display = "block";
   document.getElementById("app").style.display = "none";
   document.getElementById("keyinput").value = "";
 }
- 
+
 function init() {
-  history = [{ role:"assistant", content:"Hey! Thanks for reaching out to DV Acquisitions. I'm Diego's assistant — who am I speaking with today?" }];
+  history = [{ role:"assistant", content:"Hey! Thanks for reaching out to D&O Property Group. I'm Sofia, Diego's assistant — who am I speaking with today?" }];
   document.getElementById("briefcard").style.display = "none";
   document.getElementById("briefph").style.display = "block";
   document.getElementById("qrsection").style.display = "block";
   renderMsgs();
   renderQR();
 }
- 
+
 function renderMsgs() {
   const box = document.getElementById("messages");
   box.innerHTML = "";
@@ -185,7 +185,7 @@ function renderMsgs() {
   });
   box.scrollTop = box.scrollHeight;
 }
- 
+
 function renderQR() {
   const box = document.getElementById("qrbox");
   box.innerHTML = "";
@@ -196,7 +196,7 @@ function renderQR() {
     box.appendChild(b);
   });
 }
- 
+
 async function send(pre) {
   if (busy || !key) return;
   const inp = document.getElementById("msginput");
@@ -233,27 +233,8 @@ async function send(pre) {
     const full = data.content?.[0]?.text || "";
     history[history.length-1].content = full;
     renderMsgs();
- const m = full.match(/\[LEAD([^\]]+)\]/);
-    if (m) {
-      showBrief(m[1]);
-      const raw = m[1];
-      const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
-      fetch("https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: new Date().toLocaleDateString(),
-          name: get("name"),
-          address: get("address"),
-          motivation: get("motivation"),
-          timeline: get("timeline"),
-          condition: get("condition"),
-          asking: get("asking"),
-          owed: get("owed"),
-          calltime: get("calltime"),
-        })
-      });
-    }
+    const m = full.match(/\[LEAD([^\]]+)\]/);
+    if (m) showBrief(m[1]);
   } catch(e) {
     history[history.length-1].content = "⚠️ "+e.message;
     history[history.length-1].err = true;
@@ -263,7 +244,7 @@ async function send(pre) {
   document.getElementById("sendbtn").disabled = false;
   document.getElementById("msginput").focus();
 }
- 
+
 function showBrief(raw) {
   const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
   const lead = { name:get("name"), address:get("address"), motivation:get("motivation"), timeline:get("timeline"), condition:get("condition"), asking:get("asking"), owed:get("owed"), calltime:get("calltime") };
@@ -280,9 +261,9 @@ function showBrief(raw) {
     document.getElementById("targetoffer").textContent = `Target offer: $${Math.round(lo*.68/1000).toLocaleString()}k – $${Math.round(lo*.74/1000).toLocaleString()}k`;
   }
 }
- 
+
 function resetChat() { if(key) init(); }
- 
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("msginput").addEventListener("keydown", e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
   document.getElementById("keyinput").addEventListener("keydown", e => { if(e.key==="Enter") connect(); });
