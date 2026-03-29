@@ -54,6 +54,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 .badge-call { background:#22c55e20; border:1px solid #22c55e40; color:#22c55e; }
 .badge-text { background:#f59e0b20; border:1px solid #f59e0b40; color:#f59e0b; }
 .badge-urgent { background:#ef444420; border:1px solid #ef444440; color:#ef4444; }
+.badge-agent { background:#a855f720; border:1px solid #a855f740; color:#a855f7; }
 #briefrows { padding:9px 14px; }
 .br { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #0f1a2e; font-size:12px; }
 .br:last-child{border-bottom:none;}
@@ -74,6 +75,15 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 #howbox { background:#0f1117; border:1px solid #1a2035; border-radius:10px; padding:12px; }
 .hw { display:flex; gap:8px; margin-bottom:7px; font-size:11px; color:#64748b; }
 .hw:last-child{margin-bottom:0;}
+
+/* Lead loader styles */
+#leadloader { background:#0f1320; border:1px solid #2d3a5a; border-radius:10px; padding:12px; margin-bottom:10px; }
+#leadloader .slabel { margin-bottom:8px; }
+#leadfile { display:none; }
+#loadleadbtn { width:100%; background:#0c1018; border:1px dashed #2d3a5a; border-radius:7px; padding:8px; color:#475569; font-size:11px; cursor:pointer; text-align:center; font-family:inherit; }
+#loadleadbtn:hover { color:#a5b4fc; border-color:#4a5a8a; }
+#leadstatus { font-size:11px; color:#4ade80; margin-top:6px; display:none; }
+#leadcount { font-size:10px; color:#475569; margin-top:3px; }
 </style>
 </head>
 <body>
@@ -111,6 +121,16 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
       </div>
     </div>
     <div id="sidebar">
+
+      <!-- Lead Loader -->
+      <div id="leadloader">
+        <div class="slabel">&#128196; Load lead list (CSV)</div>
+        <button id="loadleadbtn" onclick="document.getElementById('leadfile').click()">&#8593; Upload CSV from DealMachine</button>
+        <input type="file" id="leadfile" accept=".csv" onchange="loadCSV(event)" />
+        <div id="leadstatus"></div>
+        <div id="leadcount"></div>
+      </div>
+
       <div id="briefcard">
         <div id="briefhead">
           <div id="brieftag">Lead brief</div>
@@ -140,40 +160,127 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 </div>
 
 <script>
+// ─── SYSTEM PROMPT ───────────────────────────────────────────────────────────
 const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and either book a call with Diego OR close a deal over text.
 
 LANGUAGE RULE: Detect the language of the seller's very first message and respond in that exact language for the ENTIRE conversation. Spanish stays Spanish. English stays English. Never mix. Never ask.
 
 Ask ONE question at a time. 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, or formulas to the seller.
 
-STEP 1 - Collect in order: name, property address, motivation for selling, timeline, condition (great/good/needs work/major repairs), asking price, mortgage balance.
+---
 
-STEP 2 - Ask: "This sounds like a great fit! Would you prefer a quick 15-minute phone call with Diego, or would you like me to put together a ballpark offer right here over text?" / "Esto suena muy bien! Prefiere una llamada rapida de 15 minutos con Diego, o le gustaria que le diera un rango de oferta aqui por mensaje?"
+OPENING FLOW:
 
-STEP 3A - PHONE CALL PATH: Ask mornings or afternoons, confirm specific time, end with "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego le llamara a las [HORA]. Sin presion, solo una charla rapida."
+If you already know the seller's name from the lead data (it will be provided at the start), your FIRST message is:
+"Hi, is this [NAME]?" / "Hola, ¿habló con [NAME]?"
+
+If you do NOT know the seller's name, your FIRST message is:
+"Hi! This is Sofia from D&O Property Group — may I ask who I'm speaking with? / Hola! Soy Sofia de D&O Property Group — ¿con quién hablo?"
+
+After they confirm their name or respond, your SECOND message is:
+"[NAME], quick question — are you the owner of the property, or are you a property manager or agent?" / "[NAME], una pregunta rápida — ¿es usted el dueño de la propiedad, o es un administrador o agente?"
+
+---
+
+IF OWNER — proceed with full qualification:
+
+STEP 1 - Collect in order: property address (if not already known from lead), motivation for selling, timeline, condition (great/good/needs work/major repairs), asking price, mortgage balance.
+
+STEP 2 - Ask: "This sounds like a great fit! Would you prefer a quick 15-minute phone call with Diego, or would you like me to put together a ballpark offer right here over text?" / "Esto suena muy bien! ¿Prefiere una llamada rápida de 15 minutos con Diego, o le gustaría que le diera un rango de oferta aquí por mensaje?"
+
+STEP 3A - PHONE CALL PATH: Ask mornings or afternoons, confirm specific time, end with "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego le llamará a las [HORA]. Sin presión, solo una charla rápida."
 
 STEP 3B - TEXT OFFER PATH:
-- Present offer: "Based on what you have shared, and factoring in repairs and our costs since we buy completely as-is, Diego would likely be in the range of $[MAO_LOW] to $[MAO_HIGH]. Does that range work for you?"
+- Present offer: "Based on what you've shared, and factoring in repairs and our costs since we buy completely as-is, Diego would likely be in the range of $[MAO_LOW] to $[MAO_HIGH]. Does that range work for you?"
 - Calculate MAO_LOW = asking price x 0.55, MAO_HIGH = asking price x 0.65
 - If seller says YES to range: "Awesome! To get the paperwork started I just need your email address so we can send over the purchase agreement." Then output the LEAD tag.
-- If seller COUNTERS with a higher number: Check if their counter is under MAO_HIGH. If yes say "You know what, we can make [THEIR NUMBER] work. Let me get your email to send the purchase agreement right over." If their counter is too high say "I totally understand, and I wish we could go higher — but [MAX] is honestly the most we can offer given the repairs and our holding costs. Would that work?" 
-- If seller is NOT HAPPY with any number: "I completely understand — I never want you to feel pressured. Here is what I can do — let me get Diego on the phone with you as fast as possible. He is motivated to make this work and may have more flexibility than I do over text. What is the best number to reach you, and are you available in the next hour or two?" This creates urgency and gets Diego on fast while the seller is still warm.
+- If seller COUNTERS with a higher number: Check if their counter is under MAO_HIGH. If yes say "You know what, we can make [THEIR NUMBER] work. Let me get your email to send the purchase agreement right over." If their counter is too high say "I totally understand, and I wish we could go higher — but [MAX] is honestly the most we can offer given the repairs and our holding costs. Would that work?"
+- If seller is NOT HAPPY with any number: "I completely understand — I never want you to feel pressured. Here is what I can do — let me get Diego on the phone with you as fast as possible. He is motivated to make this work and may have more flexibility than I do over text. What is the best number to reach you, and are you available in the next hour or two?"
 - If seller gives their number for urgent call: Output the LEAD tag immediately with preference=URGENT-CALL and calltime=ASAP.
 
-SPANISH versions of key lines:
-- "Que bueno! Para empezar con el papeleo solo necesito su correo electronico para enviarle el contrato de compra."
-- "Entiendo perfectamente — nunca quiero que se sienta presionado. Lo que puedo hacer es comunicarle con Diego lo antes posible. El tiene mas flexibilidad y quiere hacer que esto funcione. Cual es el mejor numero para contactarle, y esta disponible en la proxima hora o dos?"
+---
 
-When deal confirmed OR urgent call triggered output at end:
-[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=call or text or URGENT-CALL email=X]`;
+IF AGENT OR PROPERTY MANAGER — switch to business mode immediately:
 
-const QUICK_EN = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works","I'd prefer an offer over text","That number doesn't work for me"];
-const QUICK_ES = ["Hola quiero vender mi casa","Herede una propiedad","Estoy atrasado en pagos","La casa necesita mucho trabajo","Pido alrededor de $140,000","Debo como $75,000","Necesito cerrar en 30 dias","Las mananas me vienen bien","Manana a las 10am esta bien","Prefiero una oferta por mensaje","Ese numero no me funciona"];
+Say: "Perfect, I work with cash buyers throughout the Houston area. Is the owner open to a cash offer below market value? What would be the best way to reach them or pass along our interest?" / "Perfecto, trabajo con compradores en efectivo en toda el área de Houston. ¿Está el dueño abierto a una oferta en efectivo por debajo del valor de mercado? ¿Cuál sería la mejor forma de contactarle o hacerle llegar nuestro interés?"
+
+Collect: owner contact info or best way to reach decision maker. Then output LEAD tag with preference=AGENT-REFERRAL.
+
+---
+
+When deal confirmed OR urgent call OR agent referral triggered, output at end of message:
+[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=call or text or URGENT-CALL or AGENT-REFERRAL email=X]`;
+
+// ─── QUICK REPLIES ────────────────────────────────────────────────────────────
+const QUICK_EN = [
+  "Yes this is me",
+  "I'm the owner",
+  "I'm a property manager",
+  "I inherited a property",
+  "I'm behind on payments",
+  "House needs a lot of work",
+  "Asking around $140,000",
+  "I owe about $75,000",
+  "Need to close in 30 days",
+  "Mornings work best",
+  "I'd prefer an offer over text",
+  "That number doesn't work for me"
+];
+const QUICK_ES = [
+  "Sí, soy yo",
+  "Soy el dueño",
+  "Soy administrador de la propiedad",
+  "Heredé una propiedad",
+  "Estoy atrasado en pagos",
+  "La casa necesita mucho trabajo",
+  "Pido alrededor de $140,000",
+  "Debo como $75,000",
+  "Necesito cerrar en 30 días",
+  "Las mañanas me vienen bien",
+  "Prefiero una oferta por mensaje",
+  "Ese número no me funciona"
+];
 
 const MAKE_WEBHOOK = "https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et";
 
 let key = "", history = [], busy = false, lang = "en";
+let leads = [], currentLead = null;
 
+// ─── CSV LOADER ───────────────────────────────────────────────────────────────
+function loadCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g,''));
+    leads = [];
+    for (let i = 1; i < lines.length; i++) {
+      const vals = lines[i].split(',').map(v => v.trim().replace(/"/g,''));
+      const row = {};
+      headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
+      // Try to find name and address from common DealMachine column names
+      const name = row['owner name'] || row['owner'] || row['contact name'] || row['name'] || '';
+      const address = row['property address'] || row['address'] || row['street address'] || '';
+      const phone = row['phone'] || row['phone number'] || row['mobile'] || '';
+      if (name || address) leads.push({ name, address, phone, raw: row });
+    }
+    document.getElementById('leadstatus').style.display = 'block';
+    document.getElementById('leadstatus').textContent = '✓ Lead list loaded';
+    document.getElementById('leadcount').textContent = leads.length + ' leads ready';
+    // Auto-load first lead
+    if (leads.length > 0) setLead(leads[0]);
+  };
+  reader.readAsText(file);
+}
+
+function setLead(lead) {
+  currentLead = lead;
+  if (key) init();
+}
+
+// ─── CORE ─────────────────────────────────────────────────────────────────────
 function connect() {
   const v = document.getElementById("keyinput").value.trim();
   if (!v.startsWith("sk-ant-")) {
@@ -197,7 +304,28 @@ function disconnect() {
 
 function init() {
   lang = "en";
-  history = [{ role:"assistant", content:"Hey! Thanks for reaching out to D&O Property Group. I'm Sofia — who am I speaking with? / Hola! Gracias por contactar a D&O Property Group. Soy Sofia — con quien hablo?" }];
+
+  // Build opening message based on whether we have a lead loaded
+  let openingMsg = "";
+  if (currentLead && currentLead.name) {
+    openingMsg = `Hi, is this ${currentLead.name}?`;
+  } else {
+    openingMsg = "Hi! This is Sofia from D&O Property Group — may I ask who I'm speaking with? / Hola! Soy Sofia de D&O Property Group — ¿con quién hablo?";
+  }
+
+  // If we have lead data inject it into context so Sofia knows it
+  let leadContext = "";
+  if (currentLead) {
+    leadContext = `\n\n[LEAD DATA LOADED: name="${currentLead.name}" address="${currentLead.address}" phone="${currentLead.phone}". Use this info naturally — confirm name first, then reference the address when asking about the property.]`;
+  }
+
+  history = [
+    { role:"assistant", content: openingMsg }
+  ];
+
+  // Store lead context to inject into system prompt
+  window._leadContext = leadContext;
+
   document.getElementById("briefcard").style.display = "none";
   document.getElementById("briefph").style.display = "block";
   document.getElementById("qrsection").style.display = "block";
@@ -206,7 +334,7 @@ function init() {
 }
 
 function detectLang(text) {
-  const sw = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera","estoy","puedo","ese","numero"];
+  const sw = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","mañana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera","estoy","puedo","ese","numero","soy","dueño","dueno","sí","si","administrador"];
   return sw.some(w => text.toLowerCase().includes(w)) ? "es" : "en";
 }
 
@@ -289,13 +417,14 @@ async function send(pre) {
   document.getElementById("sendbtn").disabled = true;
   renderMsgs();
   try {
+    const systemWithLead = SYSTEM + (window._leadContext || "");
     const res = await fetch("/api/chat", {
       method:"POST",
       headers:{ "Content-Type":"application/json", "x-api-key": key },
       body: JSON.stringify({
         model:"claude-haiku-4-5-20251001",
         max_tokens:350,
-        system:SYSTEM,
+        system: systemWithLead,
         messages: history.slice(0,-1).map(m=>({role:m.role,content:m.content}))
       })
     });
@@ -344,10 +473,13 @@ function showBrief(lead) {
   const pref = (lead.preference||"").toUpperCase();
   const isUrgent = pref.includes("URGENT");
   const isText = pref.includes("TEXT") || pref.includes("TEXTO");
+  const isAgent = pref.includes("AGENT");
   const badge = document.getElementById("bookedbadge");
-  if (isUrgent) { badge.textContent = "URGENT — GET DIEGO ON NOW"; badge.className = "bookedbadge badge-urgent"; }
-  else if (isText) { badge.textContent = "TEXT OFFER ACCEPTED"; badge.className = "bookedbadge badge-text"; }
-  else { badge.textContent = "CALL BOOKED"; badge.className = "bookedbadge badge-call"; }
+
+  if (isUrgent) { badge.textContent = "⚡ URGENT — GET DIEGO ON NOW"; badge.className = "bookedbadge badge-urgent"; }
+  else if (isAgent) { badge.textContent = "🤝 AGENT REFERRAL"; badge.className = "bookedbadge badge-agent"; }
+  else if (isText) { badge.textContent = "✅ TEXT OFFER ACCEPTED"; badge.className = "bookedbadge badge-text"; }
+  else { badge.textContent = "📞 CALL BOOKED"; badge.className = "bookedbadge badge-call"; }
 
   document.getElementById("briefname").textContent = (lead.name||"Seller") + " — " + (isUrgent ? "CALL ASAP" : (lead.calltime||"TBD"));
 
@@ -360,33 +492,38 @@ function showBrief(lead) {
     ["Mortgage owed", fmt(lead.owed)],
     ["Email", lead.email],
     ["Call time", isUrgent ? "ASAP — seller is ready NOW" : lead.calltime],
-    ["Preference", isUrgent ? "Urgent call — not happy with offer" : isText ? "Text offer accepted" : "Phone call"],
+    ["Preference", isAgent ? "Agent — find owner contact" : isUrgent ? "Urgent call — not happy with offer" : isText ? "Text offer accepted" : "Phone call"],
   ];
   document.getElementById("briefrows").innerHTML = rows.filter(r=>r[1]).map(([l,v])=>
     `<div class="br"><span class="bl">${l}</span><span class="bv" style="${l==='Call time'&&isUrgent?'color:#ef4444;font-weight:700':''}">${v}</span></div>`
   ).join("");
 
-  const calc = calcDeal(lead.asking, lead.condition, lead.owed);
-  const calcRows = [
-    ["Est. ARV", `${fmt(calc.arvLow)} – ${fmt(calc.arvHigh)}`],
-    ["Repair estimate", fmt(calc.repairs)],
-    ["MAO (70% rule)", fmt(calc.mao)],
-    ["divider",""],
-    ["Your offer range", `${fmt(calc.offerLow)} – ${fmt(calc.offerHigh)}`],
-    ["Est. assignment fee", fmt(calc.assignFee)],
-    ["Seller equity", fmt(calc.equity)],
-    ["Spread", fmt(calc.spread)],
-    ["divider",""],
-    ["Deal score", calc.score],
-  ];
-  document.getElementById("calcrows").innerHTML = calcRows.map(([l,v]) => {
-    if (l==="divider") return `<hr class="calc-divider">`;
-    const cls = l==="Deal score" ? `calc-val ${calc.scoreClass}` : "calc-val";
-    return `<div class="calc-row"><span class="calc-label">${l}</span><span class="${cls}">${v}</span></div>`;
-  }).join("");
+  if (!isAgent) {
+    document.getElementById("calcbox").style.display = "block";
+    const calc = calcDeal(lead.asking, lead.condition, lead.owed);
+    const calcRows = [
+      ["Est. ARV", `${fmt(calc.arvLow)} – ${fmt(calc.arvHigh)}`],
+      ["Repair estimate", fmt(calc.repairs)],
+      ["MAO (70% rule)", fmt(calc.mao)],
+      ["divider",""],
+      ["Your offer range", `${fmt(calc.offerLow)} – ${fmt(calc.offerHigh)}`],
+      ["Est. assignment fee", fmt(calc.assignFee)],
+      ["Seller equity", fmt(calc.equity)],
+      ["Spread", fmt(calc.spread)],
+      ["divider",""],
+      ["Deal score", calc.score],
+    ];
+    document.getElementById("calcrows").innerHTML = calcRows.map(([l,v]) => {
+      if (l==="divider") return `<hr class="calc-divider">`;
+      const cls = l==="Deal score" ? `calc-val ${calc.scoreClass}` : "calc-val";
+      return `<div class="calc-row"><span class="calc-label">${l}</span><span class="${cls}">${v}</span></div>`;
+    }).join("");
+  } else {
+    document.getElementById("calcbox").style.display = "none";
+  }
 }
 
-function resetChat() { if(key) init(); }
+function resetChat() { if(key) { currentLead = leads.length > 0 ? leads[0] : null; init(); } }
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("msginput").addEventListener("keydown", e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
