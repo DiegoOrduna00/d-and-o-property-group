@@ -1,7 +1,24 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAKE_WEBHOOK = "https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et";
+
+// In-memory store for conversations and follow-up state
 const conversations = {};
+const followUpSchedule = {};
+
+const FOLLOWUP_DAYS = [2, 5, 10];
+const FOLLOWUP_MSGS = {
+  en: [
+    "Hey [NAME]! Just wanted to follow up — still interested in a cash offer for your property? No pressure at all, just checking in 🙂",
+    "Hi [NAME], I know life gets busy! Still open to chatting about your property? We're actively buying in your area and would love to help.",
+    "Hey [NAME] — last follow-up from me, I promise! If the timing ever works out, we'd love to make you a cash offer. Wishing you all the best either way 🤙"
+  ],
+  es: [
+    "Hola [NAME]! Solo quería hacer seguimiento — ¿sigue interesado en una oferta en efectivo por su propiedad? Sin presión, solo verificando 🙂",
+    "Hola [NAME], ¡sé que la vida se pone ocupada! ¿Sigue abierto a hablar sobre su propiedad? Estamos comprando activamente en su área.",
+    "Hola [NAME] — ¡último seguimiento de mi parte, lo prometo! Si alguna vez el momento es adecuado, nos encantaría hacerle una oferta. ¡Les deseo lo mejor! 🤙"
+  ]
+};
 
 const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and either book a call with Diego OR close a deal over text.
 
@@ -11,16 +28,13 @@ Ask ONE question at a time. 2-3 sentences max. Sound like a real human texting. 
 
 ---
 
-OPENING FLOW:
+OPENING FLOW — FOLLOW THIS EXACTLY, NO EXCEPTIONS:
 
-If you already know the seller's name from the lead data (it will be provided at the start), your FIRST message is:
-"Hi, is this [NAME]?" / "Hola, ¿habló con [NAME]?"
+STEP A — Seller gives their name (or confirms it).
+STEP B — Your VERY NEXT message MUST be ONLY this, nothing else: "Quick question — are you the owner of the property, or are you a property manager or agent?" / "Una pregunta rápida — ¿es usted el dueño de la propiedad, o es un administrador o agente?"
+CRITICAL: Do NOT ask about the property. Do NOT say "do you have a property to sell." Do NOT skip Step B under ANY circumstances. Step B is MANDATORY before anything else.
 
-If you do NOT know the seller's name, your FIRST message is:
-"Hi! This is Sofia from D&O Property Group — may I ask who I'm speaking with?"
-
-After they confirm their name or respond, your SECOND message is:
-"[NAME], quick question — are you the owner of the property, or are you a property manager or agent?" / "[NAME], una pregunta rápida — ¿es usted el dueño de la propiedad, o es un administrador o agente?"
+After they answer Step B, THEN branch:
 
 ---
 
@@ -50,6 +64,10 @@ Collect: owner contact info or best way to reach decision maker. Then output LEA
 
 ---
 
+FOLLOW-UP CONTEXT: If the message starts with [FOLLOW-UP DAY X], Sofia is resuming after a follow-up. Pick up naturally, be warm, and continue qualifying.
+
+---
+
 When deal confirmed OR urgent call OR agent referral triggered, output at end of message:
 [LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=call or text or URGENT-CALL or AGENT-REFERRAL email=X]`;
 
@@ -59,8 +77,46 @@ export default async function handler(req, res) {
   const from = req.body.From;
   const message = req.body.Body;
 
-  if (!conversations[from]) {
-    conversations[from] = [];
+  if (!conversations[from]) conversations[from] = [];
+
+  // Mark follow-up as replied if one was sent
+  if (followUpSchedule[from] && followUpSchedule[from].awaitingReply) {
+    followUpSchedule[from].awaitingReply = false;
+    followUpSchedule[from].lastReply = new Date();
+    fetch(MAKE_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: new Date().toLocaleDateString(),
+        event: "FOLLOW_UP_REPLY",
+        phone: from,
+        seller: followUpSchedule[from].name || "Unknown",
+        followup_day: FOLLOWUP_DAYS[followUpSchedule[from].followUpsSent - 1],
+        note: "Seller replied to follow-up — Sofia resuming conversation. Diego notified."
+      })
+    }).catch(() => {});
+  }
+
+  // Init follow-up schedule on first contact
+  if (!followUpSchedule[from]) {
+    followUpSchedule[from] = {
+      name: "",
+      lang: "en",
+      lastReply: new Date(),
+      followUpsSent: 0,
+      stopped: false,
+      awaitingReply: false,
+      timers: []
+    };
+  }
+
+  followUpSchedule[from].lastReply = new Date();
+
+  // Detect language
+  const spanishWords = ["hola","quiero","vender","casa","necesito","pido","debo","soy","dueño","sí"];
+  if (conversations[from].length === 0) {
+    followUpSchedule[from].lang = spanishWords.some(w => message.toLowerCase().includes(w)) ? "es" : "en";
+    followUpSchedule[from].name = message.split(" ")[0];
   }
 
   conversations[from].push({ role: "user", content: message });
@@ -76,36 +132,32 @@ export default async function handler(req, res) {
     const reply = response.content[0].text;
     conversations[from].push({ role: "assistant", content: reply });
 
-    // Check if lead was booked
+    // Check for lead tag
     const leadMatch = reply.match(/\[LEAD([^\]]+)\]/);
     if (leadMatch) {
       const raw = leadMatch[1];
       const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
       const lead = {
         date: new Date().toLocaleDateString(),
-        name: get("name"),
-        address: get("address"),
-        motivation: get("motivation"),
-        timeline: get("timeline"),
-        condition: get("condition"),
-        asking: get("asking"),
-        owed: get("owed"),
-        calltime: get("calltime"),
-        preference: get("preference"),
-        email: get("email"),
-        phone: from,
+        name: get("name"), address: get("address"), motivation: get("motivation"),
+        timeline: get("timeline"), condition: get("condition"), asking: get("asking"),
+        owed: get("owed"), calltime: get("calltime"), preference: get("preference"),
+        email: get("email"), phone: from,
       };
-
-      // Fire Make webhook
+      if (lead.name) followUpSchedule[from].name = lead.name;
+      followUpSchedule[from].stopped = true; // Stop follow-ups on deal close
       await fetch(MAKE_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lead),
       });
     }
 
-    const cleanReply = reply.replace(/\[LEAD[^\]]*\]/g, "").trim();
+    // Schedule follow-ups after first exchange
+    if (conversations[from].length === 2 && !followUpSchedule[from].stopped) {
+      scheduleFollowUps(from);
+    }
 
+    const cleanReply = reply.replace(/\[LEAD[^\]]*\]/g, "").trim();
     res.setHeader("Content-Type", "text/xml");
     res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -119,4 +171,56 @@ export default async function handler(req, res) {
   <Message>Hey! We're experiencing a technical issue. Please try again in a moment.</Message>
 </Response>`);
   }
+}
+
+function scheduleFollowUps(phone) {
+  const schedule = followUpSchedule[phone];
+  if (!schedule) return;
+
+  FOLLOWUP_DAYS.forEach((day, idx) => {
+    const delayMs = day * 24 * 60 * 60 * 1000;
+    const timer = setTimeout(async () => {
+      if (schedule.stopped) return;
+      const hoursSinceReply = (new Date() - schedule.lastReply) / (1000 * 60 * 60);
+      if (hoursSinceReply < 23) return; // Skip if seller replied recently
+
+      const msgs = FOLLOWUP_MSGS[schedule.lang] || FOLLOWUP_MSGS.en;
+      const msg = msgs[idx].replace("[NAME]", schedule.name || "there");
+
+      conversations[phone] = conversations[phone] || [];
+      conversations[phone].push({ role: "assistant", content: `[FOLLOW-UP DAY ${day}] ${msg}` });
+
+      schedule.followUpsSent = idx + 1;
+      schedule.awaitingReply = true;
+
+      try {
+        const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+        const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+        const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
+        if (twilioSid && twilioAuth && twilioFrom) {
+          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Authorization": "Basic " + Buffer.from(`${twilioSid}:${twilioAuth}`).toString("base64")
+            },
+            body: new URLSearchParams({ From: twilioFrom, To: phone, Body: msg })
+          });
+        }
+        await fetch(MAKE_WEBHOOK, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: new Date().toLocaleDateString(),
+            event: `FOLLOW_UP_DAY_${day}`,
+            phone, seller: schedule.name, message: msg
+          })
+        });
+      } catch (e) {
+        console.error("Follow-up send error:", e);
+      }
+    }, delayMs);
+
+    schedule.timers = schedule.timers || [];
+    schedule.timers.push(timer);
+  });
 }
