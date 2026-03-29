@@ -84,6 +84,20 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 #loadleadbtn:hover { color:#a5b4fc; border-color:#4a5a8a; }
 #leadstatus { font-size:11px; color:#4ade80; margin-top:6px; display:none; }
 #leadcount { font-size:10px; color:#475569; margin-top:3px; }
+
+/* Follow-up cadence styles */
+#followupbox { background:#0f1320; border:1px solid #2d3a5a; border-radius:10px; padding:12px; }
+#followupbox .slabel { margin-bottom:8px; }
+.fu-item { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #0f1a2e; font-size:11px; }
+.fu-item:last-child { border-bottom:none; }
+.fu-day { color:#60a5fa; font-weight:600; min-width:40px; }
+.fu-msg { color:#475569; flex:1; padding:0 8px; line-height:1.4; }
+.fu-status { font-size:10px; padding:2px 7px; border-radius:10px; }
+.fu-pending { background:#1e293b; color:#475569; }
+.fu-sent { background:#22c55e20; border:1px solid #22c55e40; color:#22c55e; }
+.fu-replied { background:#f59e0b20; border:1px solid #f59e0b40; color:#f59e0b; }
+#fusimbtn { width:100%; margin-top:8px; background:#0c1018; border:1px solid #2d3a5a; border-radius:7px; padding:7px; color:#475569; font-size:11px; cursor:pointer; font-family:inherit; }
+#fusimbtn:hover { color:#a5b4fc; border-color:#4a5a8a; }
 </style>
 </head>
 <body>
@@ -154,6 +168,13 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
         <div class="hw"><span>&#128197;</span>Call or text offer — seller picks</div>
         <div class="hw"><span>&#128203;</span>Full deal analysis generated</div>
         <div class="hw"><span>&#9889;</span>Not happy? Diego jumps on fast</div>
+      </div>
+
+      <!-- Follow-up Cadence Panel -->
+      <div id="followupbox" style="display:none;">
+        <div class="slabel">⏰ Follow-up cadence</div>
+        <div id="fulist"></div>
+        <button id="fusimbtn" onclick="simulateFollowUp()">⚡ Simulate next follow-up</button>
       </div>
     </div>
   </div>
@@ -242,6 +263,79 @@ const MAKE_WEBHOOK = "https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et";
 
 let key = "", history = [], busy = false, lang = "en";
 let leads = [], currentLead = null;
+
+// ─── FOLLOW-UP CADENCE ────────────────────────────────────────────────────────
+const FOLLOWUPS = [
+  { day: 2,  msg_en: "Hey [NAME]! Just wanted to follow up — still interested in a cash offer for your property? No pressure at all, just checking in 🙂", msg_es: "Hola [NAME]! Solo quería hacer seguimiento — ¿sigue interesado en una oferta en efectivo por su propiedad? Sin presión, solo verificando 🙂" },
+  { day: 5,  msg_en: "Hi [NAME], I know life gets busy! Still open to chatting about your property? We're actively buying in your area and would love to help.", msg_es: "Hola [NAME], ¡sé que la vida se pone ocupada! ¿Sigue abierto a hablar sobre su propiedad? Estamos comprando activamente en su área y nos encantaría ayudar." },
+  { day: 10, msg_en: "Hey [NAME] — last follow-up from me, I promise! If the timing ever works out, we'd love to make you a cash offer. Wishing you all the best either way 🤙", msg_es: "Hola [NAME] — ¡último seguimiento de mi parte, lo prometo! Si alguna vez el momento es adecuado, nos encantaría hacerle una oferta en efectivo. ¡Les deseo lo mejor de cualquier manera! 🤙" },
+];
+
+let followUpState = []; // { day, status: 'pending'|'sent'|'replied' }
+let currentSellerName = "";
+
+function initFollowUps(name) {
+  currentSellerName = name || "there";
+  followUpState = FOLLOWUPS.map(f => ({ ...f, status: "pending" }));
+  renderFollowUps();
+  document.getElementById("followupbox").style.display = "block";
+}
+
+function renderFollowUps() {
+  const list = document.getElementById("fulist");
+  list.innerHTML = followUpState.map((f, i) => {
+    const msg = lang === "es" ? f.msg_es : f.msg_en;
+    const preview = msg.replace("[NAME]", currentSellerName).substring(0, 50) + "...";
+    const statusLabel = f.status === "sent" ? "Sent" : f.status === "replied" ? "Replied ⚡" : "Pending";
+    const statusClass = f.status === "sent" ? "fu-sent" : f.status === "replied" ? "fu-replied" : "fu-pending";
+    return `<div class="fu-item">
+      <span class="fu-day">Day ${f.day}</span>
+      <span class="fu-msg">${preview}</span>
+      <span class="fu-status ${statusClass}">${statusLabel}</span>
+    </div>`;
+  }).join("");
+}
+
+function simulateFollowUp() {
+  const nextIdx = followUpState.findIndex(f => f.status === "pending");
+  if (nextIdx === -1) {
+    document.getElementById("fusimbtn").textContent = "✅ All follow-ups sent";
+    document.getElementById("fusimbtn").disabled = true;
+    return;
+  }
+  const fu = followUpState[nextIdx];
+  const msg = (lang === "es" ? fu.msg_es : fu.msg_en).replace("[NAME]", currentSellerName);
+  followUpState[nextIdx].status = "sent";
+
+  // Inject follow-up into chat as Sofia message
+  history.push({ role: "assistant", content: `[Follow-up Day ${fu.day}] ${msg}` });
+  renderMsgs();
+  renderFollowUps();
+
+  if (nextIdx === followUpState.length - 1) {
+    document.getElementById("fusimbtn").textContent = "✅ All follow-ups sent";
+    document.getElementById("fusimbtn").disabled = true;
+  }
+}
+
+function markFollowUpReplied() {
+  const sentIdx = followUpState.findIndex(f => f.status === "sent");
+  if (sentIdx !== -1) {
+    followUpState[sentIdx].status = "replied";
+    renderFollowUps();
+    // Fire webhook to notify Diego
+    fetch(MAKE_WEBHOOK, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: new Date().toLocaleDateString(),
+        event: "FOLLOW_UP_REPLY",
+        seller: currentSellerName,
+        followup_day: followUpState[sentIdx].day,
+        note: "Seller replied to follow-up — Sofia resuming conversation"
+      })
+    }).catch(() => {});
+  }
+}
 
 // ─── CSV LOADER ───────────────────────────────────────────────────────────────
 function loadCSV(event) {
@@ -408,6 +502,10 @@ async function send(pre) {
   if (!txt) return;
   inp.value = "";
   if (history.length === 1) { lang = detectLang(txt); renderQR(); }
+
+  // If seller is replying and we have sent follow-ups, mark as replied
+  if (followUpState.some(f => f.status === "sent")) markFollowUpReplied();
+
   history.push({ role:"user", content:txt });
   history.push({ role:"assistant", content:"" });
   busy = true;
@@ -436,6 +534,13 @@ async function send(pre) {
     const full = data.content?.[0]?.text || "";
     history[history.length-1].content = full;
     renderMsgs();
+
+    // After second message (name confirmed), init follow-up cadence
+    if (history.filter(m => m.role === "user").length === 1 && !followUpState.length) {
+      const sellerName = txt.split(" ")[0];
+      initFollowUps(sellerName);
+    }
+
     const m = full.match(/\[LEAD([^\]]+)\]/);
     if (m) {
       const raw = m[1];
@@ -446,6 +551,8 @@ async function send(pre) {
         owed:get("owed"), calltime:get("calltime"), preference:get("preference"), email:get("email")
       };
       showBrief(lead);
+      // Update seller name in follow-ups once confirmed
+      if (lead.name) { currentSellerName = lead.name; renderFollowUps(); }
       const calc = calcDeal(lead.asking, lead.condition, lead.owed);
       fetch(MAKE_WEBHOOK, {
         method:"POST", headers:{"Content-Type":"application/json"},
@@ -520,7 +627,7 @@ function showBrief(lead) {
   }
 }
 
-function resetChat() { if(key) { currentLead = leads.length > 0 ? leads[0] : null; init(); } }
+function resetChat() { if(key) { currentLead = leads.length > 0 ? leads[0] : null; followUpState = []; currentSellerName = ""; document.getElementById("followupbox").style.display = "none"; init(); } }
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("msginput").addEventListener("keydown", e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
