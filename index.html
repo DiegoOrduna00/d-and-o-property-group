@@ -233,8 +233,27 @@ async function send(pre) {
     const full = data.content?.[0]?.text || "";
     history[history.length-1].content = full;
     renderMsgs();
-    const m = full.match(/\[LEAD([^\]]+)\]/);
-    if (m) showBrief(m[1]);
+ const m = full.match(/\[LEAD([^\]]+)\]/);
+    if (m) {
+      showBrief(m[1]);
+      const raw = m[1];
+      const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
+      fetch("https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: new Date().toLocaleDateString(),
+          name: get("name"),
+          address: get("address"),
+          motivation: get("motivation"),
+          timeline: get("timeline"),
+          condition: get("condition"),
+          asking: get("asking"),
+          owed: get("owed"),
+          calltime: get("calltime"),
+        })
+      });
+    }
   } catch(e) {
     history[history.length-1].content = "⚠️ "+e.message;
     history[history.length-1].err = true;
