@@ -53,6 +53,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 #bookedbadge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:14px; margin-top:5px; display:inline-block; }
 .badge-call { background:#22c55e20; border:1px solid #22c55e40; color:#22c55e; }
 .badge-text { background:#f59e0b20; border:1px solid #f59e0b40; color:#f59e0b; }
+.badge-urgent { background:#ef444420; border:1px solid #ef444440; color:#ef4444; }
 #briefrows { padding:9px 14px; }
 .br { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #0f1a2e; font-size:12px; }
 .br:last-child{border-bottom:none;}
@@ -112,7 +113,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
     <div id="sidebar">
       <div id="briefcard">
         <div id="briefhead">
-          <div id="brieftag">Call brief ready</div>
+          <div id="brieftag">Lead brief</div>
           <div id="briefname">—</div>
           <div id="bookedbadge" class="badge-call">&#128222; CALL BOOKED</div>
         </div>
@@ -122,7 +123,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
           <div id="calcrows"></div>
         </div>
       </div>
-      <div id="briefph">&#128203; Once a call is booked your brief and full deal analysis appear here.</div>
+      <div id="briefph">&#128203; Lead brief and deal analysis appear here once Sofia qualifies the seller.</div>
       <div id="qrsection">
         <div class="slabel">Quick seller replies</div>
         <div id="qrbox"></div>
@@ -132,36 +133,42 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
         <div class="hw"><span>&#127919;</span>Sofia qualifies in EN or ES</div>
         <div class="hw"><span>&#128197;</span>Call or text offer — seller picks</div>
         <div class="hw"><span>&#128203;</span>Full deal analysis generated</div>
-        <div class="hw"><span>&#128222;</span>You call knowing every number</div>
+        <div class="hw"><span>&#9889;</span>Not happy? Diego jumps on fast</div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and get them to either book a call with Diego or receive a ballpark offer over text.
+const SYSTEM = `You are Sofia, a friendly acquisition assistant for D&O Property Group, a real estate company in Houston TX run by Diego. Your only job is to qualify sellers and either book a call with Diego OR close a deal over text.
 
-LANGUAGE RULE: Detect the language of the seller's very first message and respond in that exact language for the entire conversation. If they write in Spanish respond 100% in Spanish. If they write in English respond 100% in English. Never mix languages. Never ask which language — just match them instantly.
+LANGUAGE RULE: Detect the language of the seller's very first message and respond in that exact language for the ENTIRE conversation. Spanish stays Spanish. English stays English. Never mix. Never ask.
 
-Ask ONE question at a time. Keep every message 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, or formulas.
+Ask ONE question at a time. 2-3 sentences max. Sound like a real human texting. Never mention ARV, MAO, or formulas to the seller.
 
-STEP 1 - Collect in this order: name, property address, why selling (motivation), timeline, property condition (great/good/needs work/major repairs), asking price, mortgage balance.
+STEP 1 - Collect in order: name, property address, motivation for selling, timeline, condition (great/good/needs work/major repairs), asking price, mortgage balance.
 
-STEP 2 - After collecting everything ask: "This sounds like a great fit! Would you prefer a quick 15-minute phone call with Diego, or would you like me to put together a ballpark offer right here over text?" / "Esto suena muy bien! Prefiere una llamada rapida de 15 minutos con Diego, o le gustaria que le diera un rango de oferta aqui por mensaje?"
+STEP 2 - Ask: "This sounds like a great fit! Would you prefer a quick 15-minute phone call with Diego, or would you like me to put together a ballpark offer right here over text?" / "Esto suena muy bien! Prefiere una llamada rapida de 15 minutos con Diego, o le gustaria que le diera un rango de oferta aqui por mensaje?"
 
-STEP 3A - If phone call: Ask mornings or afternoons, confirm specific time, end with "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego le llamara a las [HORA]. Sin presion, solo una charla rapida."
+STEP 3A - PHONE CALL PATH: Ask mornings or afternoons, confirm specific time, end with "Perfect! Diego will call you at [TIME]. No pressure at all, just a quick chat." / "Perfecto! Diego le llamara a las [HORA]. Sin presion, solo una charla rapida."
 
-STEP 3B - If text offer: Say "Based on what you have shared, and factoring in the repairs and our costs since we buy completely as-is, Diego would likely be in the range of $[MAO_LOW] to $[MAO_HIGH]. This is just a ballpark — Diego can get you an exact number on a quick call. Does that range work for you?" Calculate MAO_LOW as asking price times 0.55, MAO_HIGH as asking price times 0.65. If they say yes to the range, book a call to finalize. If they say no, ask what number works for them and respond with empathy.
+STEP 3B - TEXT OFFER PATH:
+- Present offer: "Based on what you have shared, and factoring in repairs and our costs since we buy completely as-is, Diego would likely be in the range of $[MAO_LOW] to $[MAO_HIGH]. Does that range work for you?"
+- Calculate MAO_LOW = asking price x 0.55, MAO_HIGH = asking price x 0.65
+- If seller says YES to range: "Awesome! To get the paperwork started I just need your email address so we can send over the purchase agreement." Then output the LEAD tag.
+- If seller COUNTERS with a higher number: Check if their counter is under MAO_HIGH. If yes say "You know what, we can make [THEIR NUMBER] work. Let me get your email to send the purchase agreement right over." If their counter is too high say "I totally understand, and I wish we could go higher — but [MAX] is honestly the most we can offer given the repairs and our holding costs. Would that work?" 
+- If seller is NOT HAPPY with any number: "I completely understand — I never want you to feel pressured. Here is what I can do — let me get Diego on the phone with you as fast as possible. He is motivated to make this work and may have more flexibility than I do over text. What is the best number to reach you, and are you available in the next hour or two?" This creates urgency and gets Diego on fast while the seller is still warm.
+- If seller gives their number for urgent call: Output the LEAD tag immediately with preference=URGENT-CALL and calltime=ASAP.
 
-If not interested: "No worries at all! Feel free to reach out anytime." / "Sin problema! No dudes en contactarnos cuando quieras."
+SPANISH versions of key lines:
+- "Que bueno! Para empezar con el papeleo solo necesito su correo electronico para enviarle el contrato de compra."
+- "Entiendo perfectamente — nunca quiero que se sienta presionado. Lo que puedo hacer es comunicarle con Diego lo antes posible. El tiene mas flexibilidad y quiere hacer que esto funcione. Cual es el mejor numero para contactarle, y esta disponible en la proxima hora o dos?"
 
-When call is confirmed OR text offer is accepted add at the very end:
-[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=call or text]`;
+When deal confirmed OR urgent call triggered output at end:
+[LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=call or text or URGENT-CALL email=X]`;
 
-const REPAIR_COSTS = { great: 0, good: 10000, "needs work": 25000, "major repairs": 45000 };
-
-const QUICK_EN = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works","I'd prefer an offer over text"];
-const QUICK_ES = ["Hola quiero vender mi casa","Herede una propiedad","Estoy atrasado en pagos","La casa necesita mucho trabajo","Pido alrededor de $140,000","Debo como $75,000","Necesito cerrar en 30 dias","Las mananas me vienen bien","Manana a las 10am esta bien","Prefiero una oferta por mensaje"];
+const QUICK_EN = ["Hi I want to sell my house","I inherited a property","I'm behind on payments","House needs a lot of work","Asking around $140,000","I owe about $75,000","Need to close in 30 days","Mornings work best","Tomorrow at 10am works","I'd prefer an offer over text","That number doesn't work for me"];
+const QUICK_ES = ["Hola quiero vender mi casa","Herede una propiedad","Estoy atrasado en pagos","La casa necesita mucho trabajo","Pido alrededor de $140,000","Debo como $75,000","Necesito cerrar en 30 dias","Las mananas me vienen bien","Manana a las 10am esta bien","Prefiero una oferta por mensaje","Ese numero no me funciona"];
 
 const MAKE_WEBHOOK = "https://hook.us2.make.com/nyopjdofnk8r7rnfy5rksj6qbwd9et";
 
@@ -199,7 +206,7 @@ function init() {
 }
 
 function detectLang(text) {
-  const sw = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera","estoy","puedo"];
+  const sw = ["hola","quiero","vender","casa","herede","necesito","pido","debo","manana","atrasado","gracias","tengo","precio","cuanto","propiedad","vendiendo","quisiera","estoy","puedo","ese","numero"];
   return sw.some(w => text.toLowerCase().includes(w)) ? "es" : "en";
 }
 
@@ -209,7 +216,6 @@ function getRepairCost(condition) {
   if (c.includes("great")) return 0;
   if (c.includes("good")) return 10000;
   if (c.includes("major")) return 45000;
-  if (c.includes("work") || c.includes("repair") || c.includes("reparacion") || c.includes("trabajo")) return 25000;
   return 25000;
 }
 
@@ -222,11 +228,11 @@ function calcDeal(asking, condition, owed) {
   const mao = Math.round(arvLow * 0.70) - repairs;
   const offerLow = Math.round(mao * 0.68 / 1000) * 1000;
   const offerHigh = Math.round(mao * 0.74 / 1000) * 1000;
-  const assignFee = Math.round((mao - a) * 0.6 / 1000) * 1000;
+  const assignFee = Math.max(0, Math.round((mao - a) * 0.6 / 1000) * 1000);
   const equity = a - o;
   const spread = mao - a;
   let score, scoreClass;
-  if (spread > 20000) { score = "HOT"; scoreClass = "hot"; }
+  if (spread > 20000) { score = "HOT 🔥"; scoreClass = "hot"; }
   else if (spread > 5000) { score = "WARM"; scoreClass = "warm"; }
   else if (spread >= 0) { score = "THIN"; scoreClass = "thin"; }
   else { score = "DEAD"; scoreClass = "dead"; }
@@ -235,7 +241,8 @@ function calcDeal(asking, condition, owed) {
 
 function fmt(n) {
   const v = parseFloat(n);
-  if (isNaN(v) || v === 0) return "$0";
+  if (isNaN(v)) return "—";
+  if (v === 0) return "$0";
   return "$" + Math.round(v).toLocaleString();
 }
 
@@ -287,7 +294,7 @@ async function send(pre) {
       headers:{ "Content-Type":"application/json", "x-api-key": key },
       body: JSON.stringify({
         model:"claude-haiku-4-5-20251001",
-        max_tokens:300,
+        max_tokens:350,
         system:SYSTEM,
         messages: history.slice(0,-1).map(m=>({role:m.role,content:m.content}))
       })
@@ -308,15 +315,15 @@ async function send(pre) {
       const raw = m[1];
       const get = k => { const r = raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
       const lead = {
-        name: get("name"), address: get("address"), motivation: get("motivation"),
-        timeline: get("timeline"), condition: get("condition"), asking: get("asking"),
-        owed: get("owed"), calltime: get("calltime"), preference: get("preference")
+        name:get("name"), address:get("address"), motivation:get("motivation"),
+        timeline:get("timeline"), condition:get("condition"), asking:get("asking"),
+        owed:get("owed"), calltime:get("calltime"), preference:get("preference"), email:get("email")
       };
       showBrief(lead);
+      const calc = calcDeal(lead.asking, lead.condition, lead.owed);
       fetch(MAKE_WEBHOOK, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ date: new Date().toLocaleDateString(), ...lead, language: lang,
-          deal_score: calcDeal(lead.asking, lead.condition, lead.owed).score })
+        body: JSON.stringify({ date:new Date().toLocaleDateString(), ...lead, language:lang, deal_score:calc.score })
       });
     }
   } catch(e) {
@@ -334,12 +341,15 @@ function showBrief(lead) {
   document.getElementById("qrsection").style.display = "none";
   document.getElementById("briefcard").style.display = "block";
 
-  const isText = (lead.preference||"").toLowerCase().includes("text") || (lead.preference||"").toLowerCase().includes("texto");
+  const pref = (lead.preference||"").toUpperCase();
+  const isUrgent = pref.includes("URGENT");
+  const isText = pref.includes("TEXT") || pref.includes("TEXTO");
   const badge = document.getElementById("bookedbadge");
-  badge.textContent = isText ? "OFFER SENT OVER TEXT" : "CALL BOOKED";
-  badge.className = "bookedbadge " + (isText ? "badge-text" : "badge-call");
+  if (isUrgent) { badge.textContent = "URGENT — GET DIEGO ON NOW"; badge.className = "bookedbadge badge-urgent"; }
+  else if (isText) { badge.textContent = "TEXT OFFER ACCEPTED"; badge.className = "bookedbadge badge-text"; }
+  else { badge.textContent = "CALL BOOKED"; badge.className = "bookedbadge badge-call"; }
 
-  document.getElementById("briefname").textContent = (lead.name||"Seller") + " — " + (lead.calltime||"TBD");
+  document.getElementById("briefname").textContent = (lead.name||"Seller") + " — " + (isUrgent ? "CALL ASAP" : (lead.calltime||"TBD"));
 
   const rows = [
     ["Property", lead.address],
@@ -348,11 +358,12 @@ function showBrief(lead) {
     ["Condition", lead.condition],
     ["Asking price", fmt(lead.asking)],
     ["Mortgage owed", fmt(lead.owed)],
-    ["Preference", isText ? "Text offer" : "Phone call"],
-    ["Call time", lead.calltime],
+    ["Email", lead.email],
+    ["Call time", isUrgent ? "ASAP — seller is ready NOW" : lead.calltime],
+    ["Preference", isUrgent ? "Urgent call — not happy with offer" : isText ? "Text offer accepted" : "Phone call"],
   ];
   document.getElementById("briefrows").innerHTML = rows.filter(r=>r[1]).map(([l,v])=>
-    `<div class="br"><span class="bl">${l}</span><span class="bv">${v}</span></div>`
+    `<div class="br"><span class="bl">${l}</span><span class="bv" style="${l==='Call time'&&isUrgent?'color:#ef4444;font-weight:700':''}">${v}</span></div>`
   ).join("");
 
   const calc = calcDeal(lead.asking, lead.condition, lead.owed);
@@ -360,18 +371,17 @@ function showBrief(lead) {
     ["Est. ARV", `${fmt(calc.arvLow)} – ${fmt(calc.arvHigh)}`],
     ["Repair estimate", fmt(calc.repairs)],
     ["MAO (70% rule)", fmt(calc.mao)],
-    ["divider", ""],
+    ["divider",""],
     ["Your offer range", `${fmt(calc.offerLow)} – ${fmt(calc.offerHigh)}`],
-    ["Est. assignment fee", fmt(Math.max(0, calc.assignFee))],
+    ["Est. assignment fee", fmt(calc.assignFee)],
     ["Seller equity", fmt(calc.equity)],
     ["Spread", fmt(calc.spread)],
-    ["divider", ""],
+    ["divider",""],
     ["Deal score", calc.score],
   ];
-
   document.getElementById("calcrows").innerHTML = calcRows.map(([l,v]) => {
-    if (l === "divider") return `<hr class="calc-divider">`;
-    const cls = l === "Deal score" ? `calc-val ${calc.scoreClass}` : "calc-val";
+    if (l==="divider") return `<hr class="calc-divider">`;
+    const cls = l==="Deal score" ? `calc-val ${calc.scoreClass}` : "calc-val";
     return `<div class="calc-row"><span class="calc-label">${l}</span><span class="${cls}">${v}</span></div>`;
   }).join("");
 }
