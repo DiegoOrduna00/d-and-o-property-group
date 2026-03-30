@@ -37,15 +37,25 @@ Ask at least twice. If no number, use THE ANCHOR:
 "Investors around here are paying roughly $[50-70% of their estimated value] for as-is properties. If someone offered you that — what would you say?"
 Mirror back: "So if we covered all closing costs, zero fees, bought as-is, closed on your timeline — what's the absolute best you can do?"
 
-STEP 6 — CALCULATE AND COME BACK WITH OFFER (DO THIS IMMEDIATELY — DO NOT SAY "I'LL GET BACK TO YOU LATER")
+STEP 6 — CALCULATE AND COME BACK WITH OFFER
 Once you have the asking price, calculate silently:
 - Repairs = based on condition above
 - MAO = (asking price / 0.65 x 0.70) - repairs
 - Your offer = MAO x 0.60 (use an odd number, never round)
 
-IMMEDIATELY say: "Good news — I ran it by my team and got it approved. The offer covers all closing costs, zero commissions, completely as-is, and closes on your timeline. The approved offer is $[YOUR ODD NUMBER]."
+CRITICAL — ALWAYS split this into TWO separate messages using the exact format below. Never combine them into one message.
 
-DO NOT say "I'll get back to you" or "let me check and call you later." STAY IN THE CONVERSATION and present the offer NOW.
+First send ONLY this (nothing else):
+"Let me run this by my team real quick — give me just a second. 🔄"
+
+Then on the NEXT message (after seller sees the first), send the offer:
+"Good news — got it approved! We cover all closing costs, zero commissions, buy it completely as-is, and close on your timeline. The approved offer is $[YOUR ODD NUMBER]. What do you think?"
+
+To signal this two-part flow, format your response EXACTLY like this when presenting an offer:
+[PAUSE]Let me run this by my team real quick — give me just a second. 🔄[/PAUSE][OFFER]Good news — got it approved! We cover all closing costs, zero commissions, buy it completely as-is, and close on your timeline. The approved offer is $[YOUR ODD NUMBER]. What do you think?[/OFFER]
+
+Same format for when you bump the price after negotiation:
+[PAUSE]Let me go back to my team and fight for you — one second. 🔄[/PAUSE][OFFER]Good news — I got them to move. We can do $[NEW ODD NUMBER]. Still covers all closing costs, zero fees, as-is, closes on your timeline. Can we make this work?[/OFFER]
 
 STEP 7 — NEGOTIATE (never live negotiate — always "check with team")
 - They will not be happy with your first number. That is normal. Stay calm.
@@ -181,6 +191,17 @@ export default async function handler(req, res) {
           timestamp: new Date().toISOString(),
         }),
       }).catch(e => console.error("Webhook error:", e));
+    }
+
+    // Parse two-part message if Sofia is presenting/bumping an offer
+    const pauseMatch = replyText.match(/\[PAUSE\](.*?)\[\/PAUSE\]\[OFFER\](.*?)\[\/OFFER\]/s);
+    if (pauseMatch) {
+      return res.status(200).json({
+        reply: pauseMatch[1].trim(),
+        delayedReply: pauseMatch[2].trim(),
+        delayMs: 4000,
+        isHotAlert: isHotAlert,
+      });
     }
 
     return res.status(200).json({
