@@ -159,13 +159,20 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 512,
+        max_tokens: 800,
         system: systemPrompt,
         messages: cleanMessages,
       }),
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch(parseErr) {
+      console.error("JSON parse error. Raw response:", rawText.substring(0, 500));
+      return res.status(500).json({ error: "Invalid response from Anthropic API" });
+    }
 
     if (!response.ok) {
       console.error("Anthropic error:", JSON.stringify(data));
