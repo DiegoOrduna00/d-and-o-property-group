@@ -83,8 +83,6 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 .fu-replied { background:#f59e0b20; border:1px solid #f59e0b40; color:#f59e0b; }
 #fusimbtn { width:100%; margin-top:8px; background:#0c1018; border:1px solid #2d3a5a; border-radius:7px; padding:7px; color:#475569; font-size:11px; cursor:pointer; font-family:inherit; }
 #fusimbtn:hover { color:#a5b4fc; border-color:#4a5a8a; }
-
-/* Hot alert pulse */
 @keyframes hotpulse { 0%,100%{box-shadow:0 0 0 0 #ef444440} 50%{box-shadow:0 0 0 8px #ef444400} }
 .hot-alert { animation: hotpulse 1.5s ease-in-out infinite; border-color:#ef4444 !important; }
 </style>
@@ -100,7 +98,7 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
 <div id="app">
   <div id="statusbar">
     <span>&#10003; Sofia is live · EN / ES</span>
-    <span id="hotbanner" style="color:#ef4444;font-weight:700;display:none;">⚡ HOT LEAD — DIEGO CALL NOW</span>
+    <span id="hotbanner" style="color:#ef4444;font-weight:700;display:none;">&#9889; HOT LEAD — DIEGO CALL NOW</span>
   </div>
   <div id="chatarea">
     <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #1a2035;">
@@ -114,7 +112,6 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
       </div>
     </div>
     <div id="sidebar">
-
       <div id="leadloader">
         <div class="slabel">&#128196; Load lead list (CSV)</div>
         <button id="loadleadbtn" onclick="document.getElementById('leadfile').click()">&#8593; Upload CSV from DealMachine</button>
@@ -122,7 +119,6 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
         <div id="leadstatus"></div>
         <div id="leadcount"></div>
       </div>
-
       <div id="briefcard">
         <div id="briefhead">
           <div id="brieftag">Lead brief</div>
@@ -136,12 +132,10 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
         </div>
       </div>
       <div id="briefph">&#128203; Lead brief and deal analysis appear here once Sofia qualifies the seller.</div>
-
       <div id="qrsection">
         <div class="slabel">Quick seller replies</div>
         <div id="qrbox"></div>
       </div>
-
       <div id="howbox">
         <div class="slabel">How this works</div>
         <div class="hw"><span>&#127919;</span>Sofia qualifies in EN or ES</div>
@@ -149,13 +143,11 @@ body { background: #080b12; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;
         <div class="hw"><span>&#128203;</span>Full deal analysis generated</div>
         <div class="hw"><span>&#9889;</span>Hot lead? Diego gets alerted instantly</div>
       </div>
-
       <div id="followupbox" style="display:none;">
         <div class="slabel">&#9200; Follow-up cadence</div>
         <div id="fulist"></div>
         <button id="fusimbtn" onclick="simulateFollowUp()">&#9889; Simulate next follow-up</button>
       </div>
-
     </div>
   </div>
 </div>
@@ -175,18 +167,16 @@ const QUICK_ES = [
   "Debo como $75,000","Necesito cerrar en 30 días","Las mañanas me vienen bien",
   "Prefiero una oferta por mensaje","Ese número no me funciona"
 ];
-
 const FOLLOWUPS = [
-  { day:2,  msg_en:"Hey [NAME]! Just wanted to follow up — still interested in a cash offer for your property? No pressure at all 🙂", msg_es:"Hola [NAME]! Solo quería hacer seguimiento — ¿sigue interesado en una oferta en efectivo? Sin presión 🙂" },
-  { day:5,  msg_en:"Hi [NAME], still open to chatting about your property? We're actively buying in your area.", msg_es:"Hola [NAME], ¿sigue abierto a hablar sobre su propiedad? Estamos comprando activamente en su área." },
-  { day:10, msg_en:"Hey [NAME] — last follow-up from me! If the timing ever works, we'd love to make you a cash offer. Best of luck either way 🤙", msg_es:"Hola [NAME] — ¡último seguimiento! Si alguna vez el momento es adecuado, nos encantaría hacer una oferta. ¡Buena suerte! 🤙" },
+  { day:2, msg_en:"Hey [NAME]! Just wanted to follow up — still interested in a cash offer? No pressure 🙂", msg_es:"Hola [NAME]! Solo quería hacer seguimiento — ¿sigue interesado en una oferta en efectivo? Sin presión 🙂" },
+  { day:5, msg_en:"Hi [NAME], still open to chatting about your property? We're actively buying in your area.", msg_es:"Hola [NAME], ¿sigue abierto a hablar sobre su propiedad? Estamos comprando activamente en su área." },
+  { day:10, msg_en:"Hey [NAME] — last follow-up from me! If timing ever works, we'd love to make you a cash offer 🤙", msg_es:"Hola [NAME] — último seguimiento! Si alguna vez el momento es adecuado, nos encantaría hacer una oferta 🤙" },
 ];
 
 let history = [], busy = false, lang = "en";
 let leads = [], currentLead = null;
 let followUpState = [], currentSellerName = "";
 
-// ─── FOLLOW-UP ────────────────────────────────────────────────────────────────
 function initFollowUps(name) {
   currentSellerName = name || "there";
   followUpState = FOLLOWUPS.map(f => ({ ...f, status:"pending" }));
@@ -195,26 +185,22 @@ function initFollowUps(name) {
 }
 
 function renderFollowUps() {
-  const list = document.getElementById("fulist");
-  list.innerHTML = followUpState.map(f => {
+  document.getElementById("fulist").innerHTML = followUpState.map(f => {
     const msg = (lang==="es" ? f.msg_es : f.msg_en).replace("[NAME]", currentSellerName);
-    const preview = msg.substring(0,50) + "...";
     const statusLabel = f.status==="sent" ? "Sent" : f.status==="replied" ? "Replied ⚡" : "Pending";
     const statusClass = f.status==="sent" ? "fu-sent" : f.status==="replied" ? "fu-replied" : "fu-pending";
-    return `<div class="fu-item"><span class="fu-day">Day ${f.day}</span><span class="fu-msg">${preview}</span><span class="fu-status ${statusClass}">${statusLabel}</span></div>`;
+    return `<div class="fu-item"><span class="fu-day">Day ${f.day}</span><span class="fu-msg">${msg.substring(0,50)}...</span><span class="fu-status ${statusClass}">${statusLabel}</span></div>`;
   }).join("");
 }
 
 function simulateFollowUp() {
   const idx = followUpState.findIndex(f => f.status==="pending");
-  if (idx===-1) { document.getElementById("fusimbtn").textContent="✅ All follow-ups sent"; document.getElementById("fusimbtn").disabled=true; return; }
-  const fu = followUpState[idx];
-  const msg = (lang==="es" ? fu.msg_es : fu.msg_en).replace("[NAME]", currentSellerName);
+  if (idx===-1) { document.getElementById("fusimbtn").textContent="✅ All sent"; document.getElementById("fusimbtn").disabled=true; return; }
+  const msg = (lang==="es" ? followUpState[idx].msg_es : followUpState[idx].msg_en).replace("[NAME]", currentSellerName);
   followUpState[idx].status = "sent";
-  history.push({ role:"assistant", content:`[Follow-up Day ${fu.day}] ${msg}` });
-  renderMsgs();
-  renderFollowUps();
-  if (idx===followUpState.length-1) { document.getElementById("fusimbtn").textContent="✅ All follow-ups sent"; document.getElementById("fusimbtn").disabled=true; }
+  history.push({ role:"assistant", content:msg });
+  renderMsgs(); renderFollowUps();
+  if (idx===followUpState.length-1) { document.getElementById("fusimbtn").textContent="✅ All sent"; document.getElementById("fusimbtn").disabled=true; }
 }
 
 function markFollowUpReplied() {
@@ -228,7 +214,6 @@ function markFollowUpReplied() {
   }
 }
 
-// ─── CSV LOADER ───────────────────────────────────────────────────────────────
 function loadCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -255,7 +240,6 @@ function loadCSV(event) {
   reader.readAsText(file);
 }
 
-// ─── DEAL MATH ────────────────────────────────────────────────────────────────
 function getRepairCost(condition) {
   if (!condition) return 25000;
   const c = condition.toLowerCase();
@@ -284,7 +268,6 @@ function calcDeal(asking, condition, owed) {
 
 function fmt(n) { const v=parseFloat(n); if(isNaN(v))return"—"; if(v===0)return"$0"; return"$"+Math.round(v).toLocaleString(); }
 
-// ─── RENDER ───────────────────────────────────────────────────────────────────
 function renderMsgs() {
   const box = document.getElementById("messages");
   box.innerHTML = "";
@@ -319,13 +302,11 @@ function detectLang(text) {
   return sw.some(w=>text.toLowerCase().includes(w))?"es":"en";
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
 function init() {
   lang = "en";
   const openingMsg = currentLead && currentLead.name
     ? `Hi, is this ${currentLead.name}?`
     : "Hi! This is Sofia from D&O Property Group — may I ask who I'm speaking with? 👋 / Hola! Soy Sofia de D&O Property Group — ¿con quién hablo? 👋";
-
   history = [{ role:"assistant", content:openingMsg }];
   followUpState = []; currentSellerName = "";
   document.getElementById("briefcard").style.display="none";
@@ -333,13 +314,12 @@ function init() {
   document.getElementById("qrsection").style.display="block";
   document.getElementById("followupbox").style.display="none";
   document.getElementById("hotbanner").style.display="none";
+  document.getElementById("briefcard").classList.remove("hot-alert");
   document.getElementById("fusimbtn").textContent="⚡ Simulate next follow-up";
   document.getElementById("fusimbtn").disabled=false;
-  renderMsgs();
-  renderQR();
+  renderMsgs(); renderQR();
 }
 
-// ─── SEND ─────────────────────────────────────────────────────────────────────
 async function send(pre) {
   if (busy) return;
   const inp = document.getElementById("msginput");
@@ -357,12 +337,23 @@ async function send(pre) {
   renderMsgs();
 
   try {
-    // Send to Vercel backend — backend handles Anthropic API call
+    // Build messages — CRITICAL: Anthropic requires first message to be "user" role
+    // Strip the opening assistant greeting from API call, only send user/assistant pairs
+    const apiMessages = history
+      .slice(0, -1)
+      .filter(m => m.content && m.content.trim() !== "")
+      .filter((m, idx, arr) => {
+        // Remove leading assistant messages
+        const firstUserIdx = arr.findIndex(x => x.role === "user");
+        return idx >= firstUserIdx;
+      })
+      .map(m => ({ role: m.role, content: m.content }));
+
     const res = await fetch("/api/chat", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        messages: history.slice(0,-1).map(m=>({ role:m.role, content:m.content })),
+        messages: apiMessages,
         leadData: currentLead || null
       })
     });
@@ -376,7 +367,6 @@ async function send(pre) {
     const full = data.reply || "";
     history[history.length-1].content = full;
 
-    // Hot lead alert
     if (data.isHotAlert) {
       document.getElementById("hotbanner").style.display="block";
       document.getElementById("briefcard").classList.add("hot-alert");
@@ -384,28 +374,19 @@ async function send(pre) {
 
     renderMsgs();
 
-    // Init follow-ups after first seller message
     if (history.filter(m=>m.role==="user").length===1 && !followUpState.length) {
       initFollowUps(txt.split(" ")[0]);
     }
 
-    // Parse LEAD tag if present
     const m = full.match(/\[LEAD([^\]]+)\]/);
     if (m) {
       const raw = m[1];
       const get = k => { const r=raw.match(new RegExp(k+"=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r?r[1].trim():null; };
-      const lead = {
-        name:get("name"), address:get("address"), motivation:get("motivation"),
-        timeline:get("timeline"), condition:get("condition"), asking:get("asking"),
-        owed:get("owed"), calltime:get("calltime"), preference:get("preference"), email:get("email")
-      };
+      const lead = { name:get("name"), address:get("address"), motivation:get("motivation"), timeline:get("timeline"), condition:get("condition"), asking:get("asking"), owed:get("owed"), calltime:get("calltime"), preference:get("preference"), email:get("email") };
       showBrief(lead);
       if (lead.name) { currentSellerName=lead.name; renderFollowUps(); }
       const calc = calcDeal(lead.asking, lead.condition, lead.owed);
-      fetch(MAKE_WEBHOOK, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ date:new Date().toLocaleDateString(), ...lead, language:lang, deal_score:calc.score })
-      }).catch(()=>{});
+      fetch(MAKE_WEBHOOK, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ date:new Date().toLocaleDateString(), ...lead, language:lang, deal_score:calc.score }) }).catch(()=>{});
     }
 
   } catch(e) {
@@ -419,52 +400,26 @@ async function send(pre) {
   document.getElementById("msginput").focus();
 }
 
-// ─── BRIEF CARD ───────────────────────────────────────────────────────────────
 function showBrief(lead) {
   document.getElementById("briefph").style.display="none";
   document.getElementById("qrsection").style.display="none";
   document.getElementById("briefcard").style.display="block";
-
   const pref=(lead.preference||"").toUpperCase();
-  const isUrgent=pref.includes("URGENT");
-  const isText=pref.includes("TEXT")||pref.includes("TEXTO");
-  const isAgent=pref.includes("AGENT");
+  const isUrgent=pref.includes("URGENT"), isText=pref.includes("TEXT")||pref.includes("TEXTO"), isAgent=pref.includes("AGENT");
   const badge=document.getElementById("bookedbadge");
-
   if(isUrgent){badge.textContent="⚡ URGENT — GET DIEGO ON NOW";badge.className="bookedbadge badge-urgent";}
   else if(isAgent){badge.textContent="🤝 AGENT REFERRAL";badge.className="bookedbadge badge-agent";}
   else if(isText){badge.textContent="✅ TEXT OFFER ACCEPTED";badge.className="bookedbadge badge-text";}
   else{badge.textContent="📞 CALL BOOKED";badge.className="bookedbadge badge-call";}
-
   document.getElementById("briefname").textContent=(lead.name||"Seller")+" — "+(isUrgent?"CALL ASAP":(lead.calltime||"TBD"));
-
-  const rows=[
-    ["Property",lead.address],["Motivation",lead.motivation],["Timeline",lead.timeline],
-    ["Condition",lead.condition],["Asking price",fmt(lead.asking)],["Mortgage owed",fmt(lead.owed)],
-    ["Email",lead.email],["Call time",isUrgent?"ASAP — seller is ready NOW":lead.calltime],
-    ["Preference",isAgent?"Agent referral":isUrgent?"URGENT call":isText?"Text offer accepted":"Phone call"],
-  ];
-  document.getElementById("briefrows").innerHTML=rows.filter(r=>r[1]).map(([l,v])=>
-    `<div class="br"><span class="bl">${l}</span><span class="bv" style="${l==='Call time'&&isUrgent?'color:#ef4444;font-weight:700':''}">${v}</span></div>`
-  ).join("");
-
+  const rows=[["Property",lead.address],["Motivation",lead.motivation],["Timeline",lead.timeline],["Condition",lead.condition],["Asking price",fmt(lead.asking)],["Mortgage owed",fmt(lead.owed)],["Email",lead.email],["Call time",isUrgent?"ASAP — seller ready NOW":lead.calltime],["Preference",isAgent?"Agent referral":isUrgent?"URGENT call":isText?"Text offer accepted":"Phone call"]];
+  document.getElementById("briefrows").innerHTML=rows.filter(r=>r[1]).map(([l,v])=>`<div class="br"><span class="bl">${l}</span><span class="bv" style="${l==='Call time'&&isUrgent?'color:#ef4444;font-weight:700':''}">${v}</span></div>`).join("");
   if(!isAgent){
     document.getElementById("calcbox").style.display="block";
     const calc=calcDeal(lead.asking,lead.condition,lead.owed);
-    const calcRows=[
-      ["Est. ARV",fmt(calc.arvLow)],["Repair estimate",fmt(calc.repairs)],["MAO (70% rule)",fmt(calc.mao)],
-      ["divider",""],["Your offer range",`${fmt(calc.offerLow)} – ${fmt(calc.offerHigh)}`],
-      ["Est. assignment fee",fmt(calc.assignFee)],["Seller equity",fmt(calc.equity)],["Spread",fmt(calc.spread)],
-      ["divider",""],["Deal score",calc.score],
-    ];
-    document.getElementById("calcrows").innerHTML=calcRows.map(([l,v])=>{
-      if(l==="divider")return`<hr class="calc-divider">`;
-      const cls=l==="Deal score"?`calc-val ${calc.scoreClass}`:"calc-val";
-      return`<div class="calc-row"><span class="calc-label">${l}</span><span class="${cls}">${v}</span></div>`;
-    }).join("");
-  } else {
-    document.getElementById("calcbox").style.display="none";
-  }
+    const calcRows=[["Est. ARV",fmt(calc.arvLow)],["Repair estimate",fmt(calc.repairs)],["MAO (70% rule)",fmt(calc.mao)],["divider",""],["Your offer range",`${fmt(calc.offerLow)} – ${fmt(calc.offerHigh)}`],["Est. assignment fee",fmt(calc.assignFee)],["Seller equity",fmt(calc.equity)],["Spread",fmt(calc.spread)],["divider",""],["Deal score",calc.score]];
+    document.getElementById("calcrows").innerHTML=calcRows.map(([l,v])=>{if(l==="divider")return`<hr class="calc-divider">`;const cls=l==="Deal score"?`calc-val ${calc.scoreClass}`:"calc-val";return`<div class="calc-row"><span class="calc-label">${l}</span><span class="${cls}">${v}</span></div>`;}).join("");
+  } else { document.getElementById("calcbox").style.display="none"; }
 }
 
 function resetChat() {
