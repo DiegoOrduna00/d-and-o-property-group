@@ -21,7 +21,7 @@ TEXT OFFER PATH: Offer MAO_LOW=asking x 0.55 to MAO_HIGH=asking x 0.65. Negotiat
 
 When deal confirmed output: [LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=X email=X]`;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   const from = req.body.From;
@@ -58,4 +58,25 @@ export default async function handler(req, res) {
       const get = k => { const r = raw.match(new RegExp(k + "=([^=\\[\\]]+?)(?=\\s+\\w+=|$)")); return r ? r[1].trim() : null; };
       const lead = {
         date: new Date().toLocaleDateString(),
-        name:
+        name: get("name"), address: get("address"), motivation: get("motivation"),
+        timeline: get("timeline"), condition: get("condition"), asking: get("asking"),
+        owed: get("owed"), calltime: get("calltime"), preference: get("preference"),
+        email: get("email"), phone: from
+      };
+      fetch(MAKE_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lead)
+      }).catch(() => {});
+    }
+
+    const cleanReply = reply.replace(/\[LEAD[^\]]*\]/g, "").trim();
+    res.setHeader("Content-Type", "text/xml");
+    res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${cleanReply}</Message></Response>`);
+
+  } catch (e) {
+    console.error("Sofia error:", e);
+    res.setHeader("Content-Type", "text/xml");
+    res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Hey! Sofia is having a quick technical issue. Try again in a moment!</Message></Response>`);
+  }
+};
