@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/buyers", "destination": "/buyers.html" }
-  ]
-}
