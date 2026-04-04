@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/buyers", "destination": "/buyers-intake.html" }
+    { "source": "/buyers", "destination": "/buyers.html" }
   ]
 }
