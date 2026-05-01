@@ -21,6 +21,18 @@ TEXT OFFER PATH: Offer MAO_LOW=asking x 0.55 to MAO_HIGH=asking x 0.65. Negotiat
 
 When deal confirmed output: [LEAD name=X address=X motivation=X timeline=X condition=X asking=X owed=X calltime=X preference=X email=X]`;
 
+// Escape special XML characters so Twilio's TwiML parser doesn't choke
+// on things like "D&O" (the & is what was breaking everything)
+function escapeXml(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
@@ -72,7 +84,7 @@ module.exports = async function handler(req, res) {
 
     const cleanReply = reply.replace(/\[LEAD[^\]]*\]/g, "").trim();
     res.setHeader("Content-Type", "text/xml");
-    res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${cleanReply}</Message></Response>`);
+    res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(cleanReply)}</Message></Response>`);
 
   } catch (e) {
     console.error("Sofia error:", e);
